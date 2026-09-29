@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { connecter, type FormState } from "./actions";
 
@@ -35,6 +36,10 @@ export function LoginForm({ suite }: { suite: string }) {
       >
         {pending ? "Connexion…" : "Se connecter"}
       </button>
+
+      <Link href="/connexion/mot-de-passe-oublie" className="text-center text-sm text-neutral-500 underline">
+        Mot de passe oublié ?
+      </Link>
     </form>
   );
 }

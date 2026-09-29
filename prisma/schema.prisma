@@ -64,7 +64,22 @@ model Utilisateur {
   associationId Int?
   association   Association? @relation(fields: [associationId], references: [id])
 
+  reinitialisations ReinitialisationMotDePasse[]
+
   @@index([associationId])
+}
+
+// « Mot de passe oublié » (voir src/lib/reinitialisation-mdp.ts) : jeton à usage unique, jamais
+// stocké en clair (seul son SHA-256 l'est), valable 1 heure.
+model ReinitialisationMotDePasse {
+  id            Int         @id @default(autoincrement())
+  utilisateurId Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  jetonHash     String      @unique
+  expireLe      DateTime
+  createdAt     DateTime    @default(now())
+
+  @@index([utilisateurId])
 }
 
 // Un exercice comptable de l'association (dates paramétrables : année civile
