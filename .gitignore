@@ -13,3 +13,11 @@ yarn-error.log*
 .pnpm-debug.log*
 next-env.d.ts
 *.tsbuildinfo
+
+.vercel
+.env*
+
+# Docs de référence Neon auto-téléchargées par `vercel integration add neon` (pas notre code).
+.agents/
+.claude/skills/
+skills-lock.json
