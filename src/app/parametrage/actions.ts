@@ -3,8 +3,29 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { associationCourante, exigerEcriture } from "@/lib/association";
+import { basculerActifCompte, creerCompteLectureSeule } from "@/lib/comptes";
 
 export type FormState = { errors: string[] } | undefined;
+
+export async function creerCompteLectureSeuleAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  await exigerEcriture();
+  const associationId = await associationCourante();
+  const email = String(formData.get("email") ?? "");
+  const motDePasse = String(formData.get("motDePasse") ?? "");
+  try {
+    await creerCompteLectureSeule(associationId, email, motDePasse);
+  } catch (e) {
+    return { errors: [e instanceof Error ? e.message : "Erreur inattendue."] };
+  }
+  revalidatePath("/parametrage");
+}
+
+export async function basculerActifCompteAction(id: number, actif: boolean): Promise<void> {
+  await exigerEcriture();
+  const associationId = await associationCourante();
+  await basculerActifCompte(id, associationId, actif);
+  revalidatePath("/parametrage");
+}
 
 export async function creerJournal(_prevState: FormState, formData: FormData): Promise<FormState> {
   await exigerEcriture();

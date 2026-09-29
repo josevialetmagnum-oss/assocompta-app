@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
+import { listerComptesAssociation } from "@/lib/comptes";
 import { JournalForm } from "./JournalForm";
 import { BasculeActifJournal } from "./BasculeActifJournal";
 import { CategorieForm } from "./CategorieForm";
 import { SousCategorieForm } from "./SousCategorieForm";
 import { ExerciceForm } from "./ExerciceForm";
 import { BoutonCloture } from "./BoutonCloture";
+import { CompteLectureSeuleForm } from "./CompteLectureSeuleForm";
+import { BasculeActifCompte } from "./BasculeActifCompte";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +17,11 @@ export default async function ParametragePage() {
   // jamais l'envelopper dans un .catch() : cela intercepterait le redirect() de Next.js.
   const associationId = await associationCourante();
 
-  const [journaux, categories, exercices] = await Promise.all([
+  const [journaux, categories, exercices, comptesLectureSeule] = await Promise.all([
     prisma.journal.findMany({ where: { associationId }, orderBy: { nom: "asc" } }),
     prisma.categorie.findMany({ where: { associationId }, include: { sousCategories: true }, orderBy: [{ type: "asc" }, { nom: "asc" }] }),
     prisma.exercice.findMany({ where: { associationId }, orderBy: { dateDebut: "desc" } }),
+    listerComptesAssociation(associationId),
   ]);
 
   const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR");
@@ -109,6 +113,23 @@ export default async function ParametragePage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="space-y-3 rounded border p-5">
+        <h2 className="font-sans text-[17px] font-bold tracking-normal">Comptes de consultation</h2>
+        <p className="text-sm text-[var(--texte-discret)]">
+          Accès en lecture seule aux mouvements et aux états (président, commissaire aux comptes...) — jamais de saisie.
+        </p>
+        <CompteLectureSeuleForm />
+        <ul className="divide-y">
+          {comptesLectureSeule.length === 0 && <li className="py-2 text-sm text-[var(--texte-discret)]">Aucun compte de consultation.</li>}
+          {comptesLectureSeule.map((c) => (
+            <li key={c.id} className="flex items-center justify-between py-2 text-sm">
+              <span className={c.actif ? "font-semibold" : "font-semibold text-[var(--texte-discret)] line-through"}>{c.email}</span>
+              <BasculeActifCompte id={c.id} actif={c.actif} />
+            </li>
+          ))}
+        </ul>
       </section>
     </main>
   );
