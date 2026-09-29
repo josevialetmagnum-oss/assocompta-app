@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleUtilisateur {
+  // Éditeur de la solution (LBSOFT) : crée les comptes association depuis
+  // /administration, aucun accès aux données d'une association (pas de
+  // associationId) — même principe que admin_global sur raisins-app.
+  superviseur
+  // Saisie des mouvements, paramétrage (journaux, catégories, exercices),
+  // clôture. Rattaché à une association.
+  tresorier
+  // Consultation uniquement (mouvements, états) — président, commissaire aux
+  // comptes... Rattaché à une association.
+  lecture_seule
+}
+
+enum TypeMouvement {
+  recette
+  depense
+  virement_interne
+}
+
+enum TypeTransaction {
+  virement
+  prelevement
+  cheque
+  especes
+  autre
+}
+
+// Une association cliente (le tenant). Chaque association est indépendante :
+// pas de structure "cabinet" qui en gère plusieurs (décision du 29/09/2026).
+model Association {
+  id        Int      @id @default(autoincrement())
+  nom       String
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  utilisateurs Utilisateur[]
+  exercices    Exercice[]
+  journaux     Journal[]
+  categories   Categorie[]
+  mouvements   Mouvement[]
+}
+
+model Utilisateur {
+  id             Int             @id @default(autoincrement())
+  email          String          @unique
+  motDePasseHash String
+  role           RoleUtilisateur
+  actif          Boolean         @default(true)
+  // Incrémentée pour invalider toute session ouverte (désactivation,
+  // changement de mot de passe) — voir src/lib/auth.ts.
+  sessionVersion Int             @default(0)
+  createdAt      DateTime        @default(now())
+
+  // Toujours null pour un superviseur ; toujours renseigné pour tresorier/lecture_seule.
+  associationId Int?
+  association   Association? @relation(fields: [associationId], references: [id])
+
+  @@index([associationId])
+}
+
+// Un exercice comptable de l'association (dates paramétrables : année civile
+// ou année scolaire selon l'association). Plusieurs exercices coexistent
+// (précédent/en cours/suivant, avant clôture) : voir cahier des charges.
+model Exercice {
+  id            Int       @id @default(autoincrement())
+  associationId Int
+  association   Association @relation(fields: [associationId], references: [id])
+  libelle       String
+  dateDebut     DateTime
+  dateFin       DateTime
+  cloture       Boolean   @default(false)
+  clotureLe     DateTime?
+
+  mouvements Mouvement[]
+
+  @@unique([associationId, libelle])
+  @@index([associationId])
+}
+
+// Caisse ou compte bancaire — paramétrable par association, pas figé à un
+// nombre fixe de comptes.
+model Journal {
+  id            Int         @id @default(autoincrement())
+  associationId Int
+  association   Association @relation(fields: [associationId], references: [id])
+  nom           String
+  actif         Boolean     @default(true)
+
+  mouvements            Mouvement[] @relation("MouvementJournal")
+  mouvementsDestination Mouvement[] @relation("MouvementJournalDestination")
+
+  @@unique([associationId, nom])
+  @@index([associationId])
+}
+
+// Poste de recette ou de dépense, paramétrable par association (chaque
+// association a ses propres postes budgétaires).
+model Categorie {
+  id            Int             @id @default(autoincrement())
+  associationId Int
+  association   Association     @relation(fields: [associationId], references: [id])
+  nom           String
+  type          TypeMouvement
+  actif         Boolean         @default(true)
+
+  sousCategories SousCategorie[]
+
+  @@unique([associationId, nom, type])
+  @@index([associationId])
+}
+
+model SousCategorie {
+  id          Int       @id @default(autoincrement())
+  categorieId Int
+  categorie   Categorie @relation(fields: [categorieId], references: [id])
+  nom         String
+  actif       Boolean   @default(true)
+
+  ventilations MouvementVentilation[]
+
+  @@unique([categorieId, nom])
+}
+
+// Un mouvement de trésorerie. Le montant total est la somme de ses lignes de
+// ventilation (au moins une) — voir MouvementVentilation.
+model Mouvement {
+  id            Int             @id @default(autoincrement())
+  associationId Int
+  association   Association     @relation(fields: [associationId], references: [id])
+  exerciceId    Int
+  exercice      Exercice        @relation(fields: [exerciceId], references: [id])
+  journalId     Int
+  journal       Journal         @relation("MouvementJournal", fields: [journalId], references: [id])
+  date          DateTime
+  type          TypeMouvement
+  typeTransaction TypeTransaction
+  // Montant total du mouvement (toujours positif) — pour recette/dépense, doit égaler la somme des
+  // lignes de ventilation ; un virement_interne n'a pas de catégorie, donc aucune ventilation.
+  montant       Float
+  tiers         String?
+  numeroCheque  String?
+  numeroFacture String?
+  commentaire   String?
+  // Renseigné seulement pour un virement_interne (l'autre compte impacté).
+  journalDestinationId Int?
+  journalDestination   Journal? @relation("MouvementJournalDestination", fields: [journalDestinationId], references: [id])
+  // Rapprochement bancaire (pointage manuel).
+  pointe        Boolean   @default(false)
+  pointeLe      DateTime?
+  createdAt     DateTime  @default(now())
+
+  ventilations MouvementVentilation[]
+
+  @@index([associationId])
+  @@index([journalId])
+  @@index([exerciceId])
+}
+
+// Répartit un mouvement (recette ou dépense) sur une ou plusieurs sous-catégories : la somme des
+// montants de ventilation égale le montant du mouvement.
+model MouvementVentilation {
+  id              Int           @id @default(autoincrement())
+  mouvementId     Int
+  mouvement       Mouvement     @relation(fields: [mouvementId], references: [id], onDelete: Cascade)
+  sousCategorieId Int
+  sousCategorie   SousCategorie @relation(fields: [sousCategorieId], references: [id])
+  montant         Float
+
+  @@index([mouvementId])
+  @@index([sousCategorieId])
+}

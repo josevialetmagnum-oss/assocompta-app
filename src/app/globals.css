@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+:root {
+  --foret: #1f5c3f;
+  --accent: #2f9e64;
+  --accent-fonce: #23794c;
+  --fond-app: #f4f6f2;
+  --surface: #ffffff;
+  --bordure: #dde3d8;
+  --texte: #1a2420;
+  --texte-discret: #5c6b62;
+}
+
+body {
+  background: var(--fond-app);
+  color: var(--texte);
+}
+
+.input {
+  border: 1px solid var(--bordure);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  padding: 0 0.75rem;
+  font-size: 0.9375rem;
+}
+.input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Le style de carte blanche ne s'applique qu'au tag <section> (jamais un <div>) — voir
+   raisins-app pour le piège correspondant : rester cohérent facilite le report de patrons. */
+section.rounded.border {
+  background: var(--surface);
+  border-color: var(--bordure) !important;
+}
+
+button.bg-neutral-900,
+a.bg-neutral-900 {
+  background-color: var(--accent) !important;
+  border-radius: 0.625rem;
+}
+button.bg-neutral-900:hover,
+a.bg-neutral-900:hover {
+  background-color: var(--accent-fonce) !important;
+}
