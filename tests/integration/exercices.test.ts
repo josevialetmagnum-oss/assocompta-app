@@ -45,7 +45,7 @@ describe("création d'un exercice : soldes d'ouverture", () => {
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 10,
+        date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 10,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 10 }] },
       },
     });

@@ -69,7 +69,7 @@ describe("cloisonnement entre associations", () => {
     await prisma.mouvement.create({
       data: {
         associationId: jeuB.associationId, exerciceId: jeuB.exerciceId, journalId: jeuB.journalId,
-        date: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 500,
+        date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 500,
         ventilations: { create: [{ sousCategorieId: jeuB.sousCategorieRecette, montant: 500 }] },
       },
     });

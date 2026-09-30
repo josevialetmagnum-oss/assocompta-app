@@ -159,7 +159,12 @@ model Mouvement {
   exercice      Exercice        @relation(fields: [exerciceId], references: [id])
   journalId     Int
   journal       Journal         @relation("MouvementJournal", fields: [journalId], references: [id])
+  // Date de saisie : la date réelle de l'opération, telle qu'indiquée par le trésorier.
   date          DateTime
+  // Date bilan : date prise en compte pour les rapports, dérivée de la date de saisie et de la
+  // position de l'exercice du mouvement par rapport à l'exercice en cours au moment de la saisie —
+  // voir src/lib/date-bilan.ts. Recalculée si la date de saisie change (jamais après rapprochement).
+  dateBilan     DateTime
   type          TypeMouvement
   typeTransaction TypeTransaction
   // Montant total du mouvement (toujours positif) — pour recette/dépense, doit égaler la somme des

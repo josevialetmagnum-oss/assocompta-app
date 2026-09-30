@@ -20,14 +20,14 @@ describe("calculs de trésorerie", () => {
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 100,
+        date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 100,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 100 }] },
       },
     });
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-01"), type: "depense", typeTransaction: "especes", montant: 30,
+        date: new Date("2026-03-01"), dateBilan: new Date("2026-03-01"), type: "depense", typeTransaction: "especes", montant: 30,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 30 }] },
       },
     });
@@ -41,7 +41,7 @@ describe("calculs de trésorerie", () => {
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        journalDestinationId: autreJournal.id, date: new Date("2026-02-01"), type: "virement_interne",
+        journalDestinationId: autreJournal.id, date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"), type: "virement_interne",
         typeTransaction: "virement", montant: 50,
       },
     });
@@ -58,14 +58,14 @@ describe("calculs de trésorerie", () => {
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 80,
+        date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 80,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 80 }] },
       },
     });
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-02-05"), type: "recette", typeTransaction: "especes", montant: 20,
+        date: new Date("2026-02-05"), dateBilan: new Date("2026-02-05"), type: "recette", typeTransaction: "especes", montant: 20,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 20 }] },
       },
     });
@@ -84,7 +84,7 @@ describe("calculs de trésorerie", () => {
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: autreExercice.id, journalId: jeu.journalId,
-        date: new Date("2025-06-01"), type: "recette", typeTransaction: "especes", montant: 999,
+        date: new Date("2025-06-01"), dateBilan: new Date("2025-06-01"), type: "recette", typeTransaction: "especes", montant: 999,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 999 }] },
       },
     });
@@ -101,7 +101,7 @@ describe("calculs de trésorerie", () => {
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-02-01"), type: "depense", typeTransaction: "especes", montant: 30,
+        date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"), type: "depense", typeTransaction: "especes", montant: 30,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 30 }] },
       },
     });
@@ -127,7 +127,7 @@ describe("autoriseSoldesOuverture", () => {
     await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 10,
+        date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 10,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 10 }] },
       },
     });

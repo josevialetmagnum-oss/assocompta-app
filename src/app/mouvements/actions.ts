@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import type { TypeMouvement, TypeTransaction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { associationCourante, exigerEcriture } from "@/lib/association";
+import { exerciceActif } from "@/lib/tresorerie";
+import { calculerDateBilan } from "@/lib/date-bilan";
 
 export type FormState = { errors: string[] } | undefined;
 
@@ -40,6 +42,9 @@ export async function creerMouvement(_prevState: FormState, formData: FormData):
   const journal = await prisma.journal.findFirst({ where: { id: journalId, associationId, actif: true } });
   if (!journal) return { errors: ["Journal introuvable."] };
 
+  const date = new Date(dateBrut);
+  const dateBilan = calculerDateBilan(date, exercice, await exerciceActif(associationId));
+
   if (type === "virement_interne") {
     const montant = Number(formData.get("montantVirement"));
     if (!montant || montant <= 0) return { errors: ["Le montant doit être positif."] };
@@ -51,7 +56,7 @@ export async function creerMouvement(_prevState: FormState, formData: FormData):
 
     await prisma.mouvement.create({
       data: {
-        associationId, exerciceId, journalId, journalDestinationId, date: new Date(dateBrut), type, typeTransaction,
+        associationId, exerciceId, journalId, journalDestinationId, date, dateBilan, type, typeTransaction,
         montant, tiers, numeroCheque, numeroFacture, commentaire,
       },
     });
@@ -76,7 +81,7 @@ export async function creerMouvement(_prevState: FormState, formData: FormData):
 
     await prisma.mouvement.create({
       data: {
-        associationId, exerciceId, journalId, date: new Date(dateBrut), type, typeTransaction, montant,
+        associationId, exerciceId, journalId, date, dateBilan, type, typeTransaction, montant,
         tiers, numeroCheque, numeroFacture, commentaire,
         ventilations: { create: ventilations.map((v) => ({ sousCategorieId: v.sousCategorieId, montant: v.montant })) },
       },
@@ -114,9 +119,12 @@ export async function modifierMouvement(_prevState: FormState, formData: FormDat
   const journal = await prisma.journal.findFirst({ where: { id: journalId, associationId, actif: true } });
   if (!journal) return { errors: ["Journal introuvable."] };
 
-  // Verrouillés une fois rapproché : la date et le type restent ceux déjà enregistrés.
+  // Verrouillés une fois rapproché : la date et le type restent ceux déjà enregistrés — et avec eux,
+  // la date bilan qui en dérive (voir src/lib/date-bilan.ts) : elle n'est recalculée que si la date
+  // de saisie a pu changer, jamais après rapprochement.
   let date = mouvement.date;
   let type: TypeMouvement = mouvement.type;
+  let dateBilan: Date | undefined;
   if (!mouvement.pointe) {
     const dateBrut = String(formData.get("date") ?? "");
     const typeBrut = String(formData.get("type") ?? "");
@@ -124,6 +132,7 @@ export async function modifierMouvement(_prevState: FormState, formData: FormDat
     if (!TYPES_MOUVEMENT.includes(typeBrut as TypeMouvement)) return { errors: ["Type invalide."] };
     date = new Date(dateBrut);
     type = typeBrut as TypeMouvement;
+    dateBilan = calculerDateBilan(date, mouvement.exercice, await exerciceActif(associationId));
   }
 
   if (type === "virement_interne") {
@@ -143,7 +152,7 @@ export async function modifierMouvement(_prevState: FormState, formData: FormDat
       await tx.mouvementVentilation.deleteMany({ where: { mouvementId: id } });
       await tx.mouvement.update({
         where: { id },
-        data: { journalId, journalDestinationId, date, type, typeTransaction, montant, tiers, numeroCheque, numeroFacture, commentaire },
+        data: { journalId, journalDestinationId, date, dateBilan, type, typeTransaction, montant, tiers, numeroCheque, numeroFacture, commentaire },
       });
     });
   } else {
@@ -177,7 +186,7 @@ export async function modifierMouvement(_prevState: FormState, formData: FormDat
       await tx.mouvement.update({
         where: { id },
         data: {
-          journalId, journalDestinationId: null, date, type, typeTransaction, montant,
+          journalId, journalDestinationId: null, date, dateBilan, type, typeTransaction, montant,
           tiers, numeroCheque, numeroFacture, commentaire,
           ventilations: { create: ventilations.map((v) => ({ sousCategorieId: v.sousCategorieId, montant: v.montant })) },
         },

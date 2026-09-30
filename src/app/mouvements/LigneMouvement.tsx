@@ -11,6 +11,7 @@ type SousCategorie = { id: number; nom: string; categorieNom: string; type: "rec
 type Mouvement = {
   id: number;
   date: Date;
+  dateBilan: Date;
   type: "recette" | "depense" | "virement_interne";
   typeTransaction: string;
   tiers: string | null;
@@ -65,7 +66,12 @@ export function LigneMouvement({
 
   return (
     <tr className="border-b align-top">
-      <td className="py-3 pr-2">{m.date.toLocaleDateString("fr-FR")}</td>
+      <td className="py-3 pr-2">
+        {m.date.toLocaleDateString("fr-FR")}
+        {m.dateBilan.getTime() !== m.date.getTime() && (
+          <div className="text-xs text-[var(--texte-discret)]">Bilan : {m.dateBilan.toLocaleDateString("fr-FR")}</div>
+        )}
+      </td>
       <td className="py-3 pr-2">
         {m.journal.nom}
         {m.journalDestination && <div className="text-xs text-[var(--texte-discret)]">→ {m.journalDestination.nom}</div>}

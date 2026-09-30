@@ -114,7 +114,7 @@ describe("actions serveur des mouvements", () => {
     const mouvement = await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
       },
     });
@@ -129,7 +129,7 @@ describe("actions serveur des mouvements", () => {
     const mouvement = await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10, pointe: true,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10, pointe: true,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
       },
     });
@@ -154,7 +154,7 @@ describe("modification d'un mouvement", () => {
     const mouvement = await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
       },
     });
@@ -179,7 +179,7 @@ describe("modification d'un mouvement", () => {
     const mouvement = await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10, pointe: true,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10, pointe: true,
         tiers: "Ancien tiers",
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
       },
@@ -208,7 +208,7 @@ describe("modification d'un mouvement", () => {
     const mouvement = await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10, pointe: true,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10, pointe: true,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
       },
     });
@@ -234,7 +234,7 @@ describe("modification d'un mouvement", () => {
     const mouvement = await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10, pointe: true,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10, pointe: true,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
       },
     });
@@ -255,7 +255,7 @@ describe("modification d'un mouvement", () => {
     const mouvement = await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
       },
     });
@@ -274,7 +274,7 @@ describe("modification d'un mouvement", () => {
     const mouvement = await prisma.mouvement.create({
       data: {
         associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
-        date: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
         ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
       },
     });
@@ -287,5 +287,118 @@ describe("modification d'un mouvement", () => {
         ventilations: JSON.stringify([{ sousCategorieId: jeu.sousCategorieDepense, montant: 20 }]),
       })),
     ).rejects.toThrow();
+  });
+});
+
+describe("date bilan d'un mouvement", () => {
+  // Bornes construites autour d'aujourd'hui plutôt que codées en dur : exerciceActif() (voir
+  // src/lib/tresorerie.ts) dépend de la date réelle, jamais simulée ailleurs dans ce projet.
+  const jour = (delta: number) => new Date(Date.now() + delta * 24 * 60 * 60 * 1000);
+
+  let associationId: number;
+  let journalId: number;
+  let sousCategorieRecette: number;
+  let actif: { id: number; dateDebut: Date; dateFin: Date };
+  let precedent: { id: number; dateDebut: Date; dateFin: Date };
+  let suivant: { id: number; dateDebut: Date; dateFin: Date };
+
+  beforeEach(async () => {
+    verifierBaseDeTest();
+    await viderBase();
+    const association = await prisma.association.create({ data: { nom: "Association date bilan" } });
+    associationId = association.id;
+    contexte.associationId = associationId;
+    contexte.lectureSeule = false;
+
+    const journal = await prisma.journal.create({ data: { associationId, nom: "Caisse" } });
+    journalId = journal.id;
+    const categorie = await prisma.categorie.create({ data: { associationId, nom: "Cotisations", type: "recette" } });
+    const sc = await prisma.sousCategorie.create({ data: { categorieId: categorie.id, nom: "Annuelle" } });
+    sousCategorieRecette = sc.id;
+
+    precedent = await prisma.exercice.create({
+      data: { associationId, libelle: "précédent", dateDebut: jour(-400), dateFin: jour(-31) },
+    });
+    actif = await prisma.exercice.create({
+      data: { associationId, libelle: "actif", dateDebut: jour(-30), dateFin: jour(30) },
+    });
+    suivant = await prisma.exercice.create({
+      data: { associationId, libelle: "suivant", dateDebut: jour(31), dateFin: jour(400) },
+    });
+  });
+
+  it("exercice en cours : date bilan = date de saisie", async () => {
+    const saisie = jour(0);
+    const res = await creerMouvement(undefined, formData({
+      exerciceId: String(actif.id),
+      journalId: String(journalId),
+      type: "recette",
+      typeTransaction: "especes",
+      date: saisie.toISOString().slice(0, 10),
+      ventilations: JSON.stringify([{ sousCategorieId: sousCategorieRecette, montant: 10 }]),
+    }));
+    expect(res?.errors).toBeUndefined();
+    const mouvement = await prisma.mouvement.findFirstOrThrow({ where: { associationId, exerciceId: actif.id } });
+    expect(mouvement.dateBilan.toISOString().slice(0, 10)).toBe(mouvement.date.toISOString().slice(0, 10));
+  });
+
+  it("exercice précédent : date bilan = la veille du début de l'exercice en cours", async () => {
+    const res = await creerMouvement(undefined, formData({
+      exerciceId: String(precedent.id),
+      journalId: String(journalId),
+      type: "recette",
+      typeTransaction: "especes",
+      date: jour(-350).toISOString().slice(0, 10),
+      ventilations: JSON.stringify([{ sousCategorieId: sousCategorieRecette, montant: 10 }]),
+    }));
+    expect(res?.errors).toBeUndefined();
+    const mouvement = await prisma.mouvement.findFirstOrThrow({ where: { associationId, exerciceId: precedent.id } });
+    const veille = new Date(actif.dateDebut);
+    veille.setDate(veille.getDate() - 1);
+    expect(mouvement.dateBilan.toISOString().slice(0, 10)).toBe(veille.toISOString().slice(0, 10));
+  });
+
+  it("exercice suivant : date bilan = le lendemain de la fin de l'exercice en cours", async () => {
+    const res = await creerMouvement(undefined, formData({
+      exerciceId: String(suivant.id),
+      journalId: String(journalId),
+      type: "recette",
+      typeTransaction: "especes",
+      date: jour(350).toISOString().slice(0, 10),
+      ventilations: JSON.stringify([{ sousCategorieId: sousCategorieRecette, montant: 10 }]),
+    }));
+    expect(res?.errors).toBeUndefined();
+    const mouvement = await prisma.mouvement.findFirstOrThrow({ where: { associationId, exerciceId: suivant.id } });
+    const lendemain = new Date(actif.dateFin);
+    lendemain.setDate(lendemain.getDate() + 1);
+    expect(mouvement.dateBilan.toISOString().slice(0, 10)).toBe(lendemain.toISOString().slice(0, 10));
+  });
+
+  it("modification (non rapprochée) : la date bilan est recalculée si la date de saisie change", async () => {
+    const creation = await creerMouvement(undefined, formData({
+      exerciceId: String(actif.id),
+      journalId: String(journalId),
+      type: "recette",
+      typeTransaction: "especes",
+      date: jour(0).toISOString().slice(0, 10),
+      ventilations: JSON.stringify([{ sousCategorieId: sousCategorieRecette, montant: 10 }]),
+    }));
+    expect(creation?.errors).toBeUndefined();
+    const mouvement = await prisma.mouvement.findFirstOrThrow({ where: { associationId, exerciceId: actif.id } });
+
+    // Déplacée dans le passé : reste dans l'exercice actif (toujours "en cours"), donc date bilan
+    // suit toujours la date de saisie, mais avec la nouvelle valeur.
+    const nouvelleDate = jour(-5).toISOString().slice(0, 10);
+    const modification = await modifierMouvement(undefined, formData({
+      id: String(mouvement.id),
+      journalId: String(journalId),
+      type: "recette",
+      typeTransaction: "especes",
+      date: nouvelleDate,
+      ventilations: JSON.stringify([{ sousCategorieId: sousCategorieRecette, montant: 10 }]),
+    }));
+    expect(modification?.errors).toBeUndefined();
+    const relu = await prisma.mouvement.findUniqueOrThrow({ where: { id: mouvement.id } });
+    expect(relu.dateBilan.toISOString().slice(0, 10)).toBe(nouvelleDate);
   });
 });
