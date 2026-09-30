@@ -2,8 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
 import { exerciceActif } from "@/lib/tresorerie";
 import { MouvementForm } from "./MouvementForm";
-import { PointageToggle } from "./PointageToggle";
-import { SupprimerMouvementButton } from "./SupprimerMouvementButton";
+import { LigneMouvement } from "./LigneMouvement";
 
 export const dynamic = "force-dynamic";
 
@@ -39,8 +38,6 @@ export default async function MouvementsPage({
     include: { journal: true, journalDestination: true, ventilations: { include: { sousCategorie: { include: { categorie: true } } } } },
     orderBy: { date: "desc" },
   });
-
-  const fmt = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <main className="mx-auto max-w-[1180px] space-y-6 px-4 py-6 sm:px-8">
@@ -109,33 +106,7 @@ export default async function MouvementsPage({
               </tr>
             )}
             {mouvements.map((m) => (
-              <tr key={m.id} className="border-b align-top">
-                <td className="py-3 pr-2">{m.date.toLocaleDateString("fr-FR")}</td>
-                <td className="py-3 pr-2">
-                  {m.journal.nom}
-                  {m.journalDestination && <div className="text-xs text-[var(--texte-discret)]">→ {m.journalDestination.nom}</div>}
-                </td>
-                <td className="py-3 pr-2">
-                  {m.type === "recette" && <span className="rounded-xl bg-[#E3F1E9] px-2.5 py-0.5 text-[13px] font-bold text-[#24603F]">Recette</span>}
-                  {m.type === "depense" && <span className="rounded-xl bg-[#FBE4E1] px-2.5 py-0.5 text-[13px] font-bold text-[#A3231B]">Dépense</span>}
-                  {m.type === "virement_interne" && <span className="rounded-xl bg-[#DCE8FB] px-2.5 py-0.5 text-[13px] font-bold text-[#163A7A]">Virement</span>}
-                </td>
-                <td className="py-3 pr-2">
-                  {m.ventilations.length > 0 ? (
-                    <ul>
-                      {m.ventilations.map((v) => (
-                        <li key={v.id}>{v.sousCategorie.categorie.nom} — {v.sousCategorie.nom} : {fmt(v.montant)} €</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    "—"
-                  )}
-                  {m.tiers && <div className="text-xs text-[var(--texte-discret)]">{m.tiers}</div>}
-                </td>
-                <td className="py-3 pr-2 font-semibold">{fmt(m.montant)} €</td>
-                <td className="py-3 pr-2"><PointageToggle id={m.id} pointe={m.pointe} /></td>
-                <td className="py-3 pr-2"><SupprimerMouvementButton id={m.id} /></td>
-              </tr>
+              <LigneMouvement key={m.id} mouvement={m} journaux={journaux} sousCategories={sousCategories} />
             ))}
           </tbody>
         </table>
