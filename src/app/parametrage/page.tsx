@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
 import { listerComptesAssociation } from "@/lib/comptes";
+import { autoriseSoldesOuverture } from "@/lib/tresorerie";
 import { JournalForm } from "./JournalForm";
 import { BasculeActifJournal } from "./BasculeActifJournal";
 import { CategorieForm } from "./CategorieForm";
@@ -17,11 +18,12 @@ export default async function ParametragePage() {
   // jamais l'envelopper dans un .catch() : cela intercepterait le redirect() de Next.js.
   const associationId = await associationCourante();
 
-  const [journaux, categories, exercices, comptesLectureSeule] = await Promise.all([
+  const [journaux, categories, exercices, comptesLectureSeule, soldesOuvertureAutorises] = await Promise.all([
     prisma.journal.findMany({ where: { associationId }, orderBy: { nom: "asc" } }),
     prisma.categorie.findMany({ where: { associationId }, include: { sousCategories: true }, orderBy: [{ type: "asc" }, { nom: "asc" }] }),
     prisma.exercice.findMany({ where: { associationId }, orderBy: { dateDebut: "desc" } }),
     listerComptesAssociation(associationId),
+    autoriseSoldesOuverture(associationId),
   ]);
 
   const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR");
@@ -81,7 +83,10 @@ export default async function ParametragePage() {
 
       <section className="space-y-3 rounded border p-5">
         <h2 className="font-sans text-[17px] font-bold tracking-normal">Exercices</h2>
-        <ExerciceForm />
+        <ExerciceForm
+          journaux={journaux.map((j) => ({ id: j.id, nom: j.nom, soldeInitial: j.soldeInitial }))}
+          soldesOuvertureAutorises={soldesOuvertureAutorises}
+        />
         <table className="w-full border-collapse text-[15px]">
           <thead>
             <tr className="border-b text-left text-[13px] text-[var(--texte-discret)]">

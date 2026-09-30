@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/association", async () => (await import("../support/contexte")).moduleAssociationDeTest());
 
 import { prisma } from "@/lib/prisma";
-import { resultatParCategorie, situationTresorerie, soldesJournaux } from "@/lib/tresorerie";
+import { autoriseSoldesOuverture, resultatParCategorie, situationTresorerie, soldesJournaux } from "@/lib/tresorerie";
 import { creerJeuComplet, type Jeu } from "../support/jeu-de-donnees";
 import { verifierBaseDeTest, viderBase } from "../support/base-test";
 
@@ -94,5 +94,48 @@ describe("calculs de trésorerie", () => {
     // Mais le solde du journal (temps réel) inclut bien tous les exercices.
     const soldes = await soldesJournaux(jeu.associationId);
     expect(soldes[0].solde).toBe(999);
+  });
+
+  it("le solde d'ouverture d'un journal (reprise d'un compte existant) s'ajoute aux mouvements", async () => {
+    await prisma.journal.update({ where: { id: jeu.journalId }, data: { soldeInitial: 500 } });
+    await prisma.mouvement.create({
+      data: {
+        associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
+        date: new Date("2026-02-01"), type: "depense", typeTransaction: "especes", montant: 30,
+        ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 30 }] },
+      },
+    });
+    const soldes = await soldesJournaux(jeu.associationId);
+    expect(soldes[0].solde).toBe(470);
+  });
+});
+
+describe("autoriseSoldesOuverture", () => {
+  let jeu: Jeu;
+
+  beforeEach(async () => {
+    verifierBaseDeTest();
+    await viderBase();
+    jeu = await creerJeuComplet();
+  });
+
+  it("autorise tant que l'exercice le plus récent n'a reçu aucun mouvement", async () => {
+    expect(await autoriseSoldesOuverture(jeu.associationId)).toBe(true);
+  });
+
+  it("refuse dès que l'exercice le plus récent a un mouvement", async () => {
+    await prisma.mouvement.create({
+      data: {
+        associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
+        date: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 10,
+        ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 10 }] },
+      },
+    });
+    expect(await autoriseSoldesOuverture(jeu.associationId)).toBe(false);
+  });
+
+  it("autorise pour une association sans aucun exercice", async () => {
+    const autreAssociation = await prisma.association.create({ data: { nom: "Sans exercice" } });
+    expect(await autoriseSoldesOuverture(autreAssociation.id)).toBe(true);
   });
 });

@@ -109,6 +109,10 @@ model Journal {
   association   Association @relation(fields: [associationId], references: [id])
   nom           String
   actif         Boolean     @default(true)
+  // Solde antérieur à tout mouvement enregistré dans l'application (reprise d'un compte déjà
+  // existant) — saisi à la création du premier exercice utile (voir src/lib/tresorerie.ts,
+  // exerciceDemandeSoldesOuverture()), jamais recalculé automatiquement ensuite.
+  soldeInitial  Float       @default(0)
 
   mouvements            Mouvement[] @relation("MouvementJournal")
   mouvementsDestination Mouvement[] @relation("MouvementJournalDestination")

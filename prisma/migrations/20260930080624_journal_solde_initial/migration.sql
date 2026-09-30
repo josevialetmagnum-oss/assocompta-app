@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Journal" ADD COLUMN     "soldeInitial" DOUBLE PRECISION NOT NULL DEFAULT 0;

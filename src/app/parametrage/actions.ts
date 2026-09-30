@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { associationCourante, exigerEcriture } from "@/lib/association";
 import { basculerActifCompte, creerCompteLectureSeule } from "@/lib/comptes";
+import { autoriseSoldesOuverture } from "@/lib/tresorerie";
 
 export type FormState = { errors: string[] } | undefined;
 
@@ -88,8 +89,31 @@ export async function creerExercice(_prevState: FormState, formData: FormData): 
   if (await prisma.exercice.findUnique({ where: { associationId_libelle: { associationId, libelle } } })) {
     return { errors: ["Un exercice porte déjà ce libellé."] };
   }
-  await prisma.exercice.create({ data: { associationId, libelle, dateDebut, dateFin } });
+
+  // Soldes d'ouverture (reprise d'un compte existant) : n'appliquer que si l'exercice précédent est
+  // toujours vide — revérifié ici, jamais fait confiance à ce que le formulaire a affiché (l'état a
+  // pu changer entre-temps). Si la condition n'est plus vraie, la saisie soumise est simplement
+  // ignorée : l'exercice se crée quand même, sans toucher aux soldes déjà déduits des mouvements.
+  let soldesOuverture: { journalId: number; solde: number }[] = [];
+  if (await autoriseSoldesOuverture(associationId)) {
+    try {
+      soldesOuverture = JSON.parse(String(formData.get("soldesOuverture") ?? "[]"));
+    } catch {
+      soldesOuverture = [];
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.exercice.create({ data: { associationId, libelle, dateDebut, dateFin } });
+    for (const s of soldesOuverture) {
+      if (!Number.isFinite(s.solde)) continue;
+      await tx.journal.updateMany({ where: { id: s.journalId, associationId }, data: { soldeInitial: s.solde } });
+    }
+  });
   revalidatePath("/parametrage");
+  revalidatePath("/mouvements");
+  revalidatePath("/etats");
+  revalidatePath("/");
 }
 
 export async function cloturerExercice(id: number): Promise<void> {

@@ -14,6 +14,18 @@ export async function exerciceActif(associationId: number) {
   return prisma.exercice.findFirst({ where: { associationId, cloture: false }, orderBy: { dateDebut: "desc" } });
 }
 
+// Autorise la saisie des soldes d'ouverture des journaux à la création d'un exercice : seulement
+// si l'exercice précédent (le plus récent déjà créé, s'il y en a un) n'a reçu aucun mouvement —
+// reprise d'un compte existant avant tout usage de l'application, ou premier exercice de
+// l'association. Dès qu'un exercice a été utilisé, le solde se déduit des mouvements (voir
+// soldesJournaux) et ne doit plus être modifié à la main, pour ne jamais corrompre l'historique.
+export async function autoriseSoldesOuverture(associationId: number): Promise<boolean> {
+  const precedent = await prisma.exercice.findFirst({ where: { associationId }, orderBy: { dateDebut: "desc" } });
+  if (!precedent) return true;
+  const nombreMouvements = await prisma.mouvement.count({ where: { exerciceId: precedent.id } });
+  return nombreMouvements === 0;
+}
+
 export type SoldeJournal = { journalId: number; nom: string; solde: number };
 
 // Solde de chaque journal, toutes exercices confondus (§ "soldes des comptes en temps réel").
@@ -24,7 +36,7 @@ export async function soldesJournaux(associationId: number): Promise<SoldeJourna
     select: { journalId: true, journalDestinationId: true, type: true, montant: true },
   });
 
-  const soldes = new Map<number, number>(journaux.map((j) => [j.id, 0]));
+  const soldes = new Map<number, number>(journaux.map((j) => [j.id, j.soldeInitial]));
   for (const m of mouvements) {
     if (m.type === "recette") soldes.set(m.journalId, (soldes.get(m.journalId) ?? 0) + m.montant);
     else if (m.type === "depense") soldes.set(m.journalId, (soldes.get(m.journalId) ?? 0) - m.montant);
