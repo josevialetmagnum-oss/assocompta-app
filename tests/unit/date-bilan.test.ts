@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculerDateBilan } from "@/lib/date-bilan";
+import { calculerDateBilan, positionExercice } from "@/lib/date-bilan";
 
 const exercice2025 = { id: 1, dateDebut: new Date("2025-01-01"), dateFin: new Date("2025-12-31") };
 const exercice2026 = { id: 2, dateDebut: new Date("2026-01-01"), dateFin: new Date("2026-12-31") };
@@ -24,5 +24,23 @@ describe("calculerDateBilan", () => {
   it("sans exercice actif connu, la date de saisie est utilisée telle quelle", () => {
     const saisie = new Date("2026-06-15");
     expect(calculerDateBilan(saisie, exercice2026, null)).toEqual(saisie);
+  });
+});
+
+describe("positionExercice", () => {
+  it("l'exercice actif lui-même est \"en cours\"", () => {
+    expect(positionExercice(exercice2026, exercice2026)).toBe("en_cours");
+  });
+
+  it("un exercice qui a commencé avant l'exercice actif est \"précédent\"", () => {
+    expect(positionExercice(exercice2025, exercice2026)).toBe("precedent");
+  });
+
+  it("un exercice qui commence après l'exercice actif est \"suivant\"", () => {
+    expect(positionExercice(exercice2027, exercice2026)).toBe("suivant");
+  });
+
+  it("sans exercice actif connu, tout exercice est considéré \"en cours\"", () => {
+    expect(positionExercice(exercice2025, null)).toBe("en_cours");
   });
 });

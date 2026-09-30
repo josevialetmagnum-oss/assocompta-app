@@ -1,8 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
 import { exerciceActif } from "@/lib/tresorerie";
+import { positionExercice } from "@/lib/date-bilan";
 import { MouvementForm } from "./MouvementForm";
 import { LigneMouvement } from "./LigneMouvement";
+
+const LIBELLE_POSITION: Record<ReturnType<typeof positionExercice>, string> = {
+  en_cours: "en cours",
+  precedent: "précédent",
+  suivant: "suivant",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +63,10 @@ export default async function MouvementsPage({
           <h2 className="mb-3 font-sans text-[17px] font-bold tracking-normal">Nouveau mouvement</h2>
           <MouvementForm
             journaux={journaux}
-            exercices={exercicesOuverts.map((e) => ({ id: e.id, libelle: e.libelle }))}
+            exercices={exercicesOuverts.map((e) => ({
+              id: e.id,
+              libelle: `${e.libelle} — Exercice ${LIBELLE_POSITION[positionExercice(e, actif)]}`,
+            }))}
             sousCategories={sousCategories}
           />
         </section>

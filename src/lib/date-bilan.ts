@@ -10,6 +10,7 @@
 //    cours — symétrique, pour une anticipation sur l'exercice suivant.
 
 export type ExerciceRepere = { id: number; dateDebut: Date; dateFin: Date };
+export type PositionExercice = "en_cours" | "precedent" | "suivant";
 
 function ajouterJours(date: Date, jours: number): Date {
   const copie = new Date(date);
@@ -17,14 +18,26 @@ function ajouterJours(date: Date, jours: number): Date {
   return copie;
 }
 
+// Position d'un exercice par rapport à l'exercice actif — c'est la même classification (§ Période
+// en cours/précédent/suivant du cahier des charges) que calculerDateBilan applique pour choisir la
+// date bilan ; affichée telle quelle dans le sélecteur d'exercice de la saisie (voir MouvementForm)
+// pour que la personne sache toujours ce qu'elle sélectionne.
+export function positionExercice(exercice: ExerciceRepere, exerciceActif: ExerciceRepere | null): PositionExercice {
+  if (!exerciceActif || exercice.id === exerciceActif.id) return "en_cours";
+  return exercice.dateDebut.getTime() < exerciceActif.dateDebut.getTime() ? "precedent" : "suivant";
+}
+
 export function calculerDateBilan(
   dateSaisie: Date,
   exerciceMouvement: ExerciceRepere,
   exerciceActif: ExerciceRepere | null,
 ): Date {
-  if (!exerciceActif || exerciceMouvement.id === exerciceActif.id) return dateSaisie;
-  if (exerciceMouvement.dateDebut.getTime() < exerciceActif.dateDebut.getTime()) {
-    return ajouterJours(exerciceActif.dateDebut, -1);
+  switch (positionExercice(exerciceMouvement, exerciceActif)) {
+    case "en_cours":
+      return dateSaisie;
+    case "precedent":
+      return ajouterJours(exerciceActif!.dateDebut, -1);
+    case "suivant":
+      return ajouterJours(exerciceActif!.dateFin, 1);
   }
-  return ajouterJours(exerciceActif.dateFin, 1);
 }
