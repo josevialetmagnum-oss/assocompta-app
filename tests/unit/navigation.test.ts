@@ -24,6 +24,7 @@ describe("menuPour", () => {
     const groupes = menuPour(profil);
     expect(groupes.some((g) => g.titre === "Administration")).toBe(false);
     expect(groupes.flatMap((g) => g.entrees).some((e) => e.href === "/mouvements")).toBe(true);
+    expect(groupes.flatMap((g) => g.entrees).some((e) => e.href === "/rapprochement")).toBe(true);
   });
 
   it("sans authentification (dev local), tout le métier est visible même sans rôle connu", () => {
@@ -53,6 +54,7 @@ describe("entreeActive", () => {
 describe("lectureSeuleSurCettePage", () => {
   it("s'applique aux pages métier pour un compte lecture seule", () => {
     expect(lectureSeuleSurCettePage("/mouvements", true)).toBe(true);
+    expect(lectureSeuleSurCettePage("/rapprochement", true)).toBe(true);
     expect(lectureSeuleSurCettePage("/parametrage", true)).toBe(true);
   });
 

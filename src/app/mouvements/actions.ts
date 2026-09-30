@@ -207,6 +207,7 @@ export async function basculerPointage(id: number, pointe: boolean): Promise<voi
     data: { pointe, pointeLe: pointe ? new Date() : null },
   });
   revalidatePath("/mouvements");
+  revalidatePath("/rapprochement");
 }
 
 export async function supprimerMouvement(id: number): Promise<{ error?: string }> {

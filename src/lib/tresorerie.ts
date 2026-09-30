@@ -48,6 +48,37 @@ export async function soldesJournaux(associationId: number): Promise<SoldeJourna
   return journaux.map((j) => ({ journalId: j.id, nom: j.nom, solde: Math.round((soldes.get(j.id) ?? 0) * 100) / 100 }));
 }
 
+// Solde pointé d'UN journal à une date donnée (rapprochement bancaire) : somme du solde
+// d'ouverture et des seuls mouvements déjà rapprochés (pointe = true), datés au plus tard à
+// dateLimite — à comparer au solde du relevé bancaire pour cette même date. Un virement interne
+// compte pour les deux journaux qu'il touche (source et destination), comme soldesJournaux().
+export async function soldePointeJournal(associationId: number, journalId: number, dateLimite: Date): Promise<number> {
+  const journal = await prisma.journal.findFirst({ where: { id: journalId, associationId } });
+  if (!journal) throw new Error("Journal introuvable.");
+
+  const mouvements = await prisma.mouvement.findMany({
+    where: {
+      associationId,
+      pointe: true,
+      date: { lte: dateLimite },
+      OR: [{ journalId }, { journalDestinationId: journalId }],
+    },
+    select: { journalId: true, journalDestinationId: true, type: true, montant: true },
+  });
+
+  let solde = journal.soldeInitial;
+  for (const m of mouvements) {
+    if (m.journalId === journalId) {
+      if (m.type === "recette") solde += m.montant;
+      else if (m.type === "depense") solde -= m.montant;
+      else if (m.type === "virement_interne") solde -= m.montant;
+    } else if (m.journalDestinationId === journalId) {
+      solde += m.montant;
+    }
+  }
+  return Math.round(solde * 100) / 100;
+}
+
 export type LigneResultat = { categorieId: number; nom: string; type: "recette" | "depense"; total: number };
 
 // Résultat analytique par catégorie, pour un exercice donné (§ "résultat analytique").

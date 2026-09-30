@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/association", async () => (await import("../support/contexte")).moduleAssociationDeTest());
 
 import { prisma } from "@/lib/prisma";
-import { autoriseSoldesOuverture, resultatParCategorie, situationTresorerie, soldesJournaux } from "@/lib/tresorerie";
+import { autoriseSoldesOuverture, resultatParCategorie, situationTresorerie, soldePointeJournal, soldesJournaux } from "@/lib/tresorerie";
 import { creerJeuComplet, type Jeu } from "../support/jeu-de-donnees";
 import { verifierBaseDeTest, viderBase } from "../support/base-test";
 
@@ -137,5 +137,61 @@ describe("autoriseSoldesOuverture", () => {
   it("autorise pour une association sans aucun exercice", async () => {
     const autreAssociation = await prisma.association.create({ data: { nom: "Sans exercice" } });
     expect(await autoriseSoldesOuverture(autreAssociation.id)).toBe(true);
+  });
+});
+
+describe("soldePointeJournal (rapprochement bancaire)", () => {
+  let jeu: Jeu;
+
+  beforeEach(async () => {
+    verifierBaseDeTest();
+    await viderBase();
+    jeu = await creerJeuComplet();
+  });
+
+  it("ne compte que les mouvements pointés, datés au plus tard à la date donnée", async () => {
+    await prisma.mouvement.create({
+      data: {
+        associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
+        date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"), type: "recette", typeTransaction: "especes", montant: 100, pointe: true,
+        ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 100 }] },
+      },
+    });
+    // Non pointé : ne doit pas compter.
+    await prisma.mouvement.create({
+      data: {
+        associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
+        date: new Date("2026-02-05"), dateBilan: new Date("2026-02-05"), type: "depense", typeTransaction: "especes", montant: 20,
+        ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 20 }] },
+      },
+    });
+    // Pointé mais après la date du relevé : ne doit pas compter.
+    await prisma.mouvement.create({
+      data: {
+        associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
+        date: new Date("2026-03-01"), dateBilan: new Date("2026-03-01"), type: "recette", typeTransaction: "especes", montant: 999, pointe: true,
+        ventilations: { create: [{ sousCategorieId: jeu.sousCategorieRecette, montant: 999 }] },
+      },
+    });
+
+    expect(await soldePointeJournal(jeu.associationId, jeu.journalId, new Date("2026-02-28"))).toBe(100);
+  });
+
+  it("inclut le solde d'ouverture du journal", async () => {
+    await prisma.journal.update({ where: { id: jeu.journalId }, data: { soldeInitial: 500 } });
+    expect(await soldePointeJournal(jeu.associationId, jeu.journalId, new Date("2026-02-28"))).toBe(500);
+  });
+
+  it("un virement interne pointé compte pour les deux journaux qu'il touche", async () => {
+    const autreJournal = await prisma.journal.create({ data: { associationId: jeu.associationId, nom: "Banque" } });
+    await prisma.mouvement.create({
+      data: {
+        associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
+        journalDestinationId: autreJournal.id, date: new Date("2026-02-01"), dateBilan: new Date("2026-02-01"),
+        type: "virement_interne", typeTransaction: "virement", montant: 50, pointe: true,
+      },
+    });
+    expect(await soldePointeJournal(jeu.associationId, jeu.journalId, new Date("2026-02-28"))).toBe(-50);
+    expect(await soldePointeJournal(jeu.associationId, autreJournal.id, new Date("2026-02-28"))).toBe(50);
   });
 });

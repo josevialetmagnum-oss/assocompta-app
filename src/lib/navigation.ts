@@ -20,6 +20,7 @@ export type GroupeMenu = { titre: string; entrees: EntreeMenu[] };
 const ICONES = {
   accueil: "M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10",
   mouvements: "M12 8v8M8 12h8M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0",
+  rapprochement: "M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9",
   etats: "M3 3v18h18M7 15l4-4 3 3 5-6",
   parametrage:
     "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
@@ -31,7 +32,10 @@ export const MENU_METIER: GroupeMenu[] = [
   { titre: "", entrees: [{ href: "/", libelle: "Tableau de bord", icone: ICONES.accueil }] },
   {
     titre: "Trésorerie",
-    entrees: [{ href: "/mouvements", libelle: "Mouvements", icone: ICONES.mouvements }],
+    entrees: [
+      { href: "/mouvements", libelle: "Mouvements", icone: ICONES.mouvements },
+      { href: "/rapprochement", libelle: "Rapprochement bancaire", icone: ICONES.rapprochement },
+    ],
   },
   {
     titre: "États",
