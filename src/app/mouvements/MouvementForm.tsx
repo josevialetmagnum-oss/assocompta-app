@@ -27,12 +27,16 @@ export type MouvementExistant = {
 export function MouvementForm({
   journaux,
   exercices,
+  exerciceActifId,
   sousCategories,
   mouvement,
   onSucces,
 }: {
   journaux: Journal[];
   exercices: Exercice[];
+  // Présélectionné dans le sélecteur d'exercice (création seulement) : sans lui, le navigateur
+  // choisirait le premier de la liste, qui n'est pas forcément l'exercice en cours.
+  exerciceActifId?: number;
   sousCategories: SousCategorie[];
   // En mode modification : verrouille date/montant/type si le mouvement est déjà rapproché (voir
   // modifierMouvement, src/app/mouvements/actions.ts).
@@ -102,7 +106,7 @@ export function MouvementForm({
         {!mouvement && (
           <label className="flex min-w-0 flex-col gap-1 text-sm">
             <span className="text-neutral-600">Exercice</span>
-            <select name="exerciceId" required className="input h-11">
+            <select name="exerciceId" required defaultValue={exerciceActifId} className="input h-11">
               {exercices.map((e) => (
                 <option key={e.id} value={e.id}>{e.libelle}</option>
               ))}

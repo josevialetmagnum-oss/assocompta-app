@@ -67,6 +67,7 @@ export default async function MouvementsPage({
               id: e.id,
               libelle: `${e.libelle} — Exercice ${LIBELLE_POSITION[positionExercice(e, actif)]}`,
             }))}
+            exerciceActifId={actif?.id}
             sousCategories={sousCategories}
           />
         </section>
