@@ -20,6 +20,7 @@ type Mouvement = {
   commentaire: string | null;
   montant: number;
   pointe: boolean;
+  rapprochementId: number | null;
   journalId: number;
   journal: { nom: string };
   journalDestinationId: number | null;
@@ -94,7 +95,7 @@ export function LigneMouvement({
         {m.tiers && <div className="text-xs text-[var(--texte-discret)]">{m.tiers}</div>}
       </td>
       <td className="py-3 pr-2 font-semibold">{fmt(m.montant)} €</td>
-      <td className="py-3 pr-2"><PointageToggle id={m.id} pointe={m.pointe} /></td>
+      <td className="py-3 pr-2"><PointageToggle id={m.id} pointe={m.pointe} verrouille={m.rapprochementId !== null} /></td>
       <td className="py-3 pr-2">
         <div className="flex flex-col items-start gap-1">
           <button type="button" onClick={() => setEdition(true)} className="text-xs font-semibold text-[var(--accent)]">

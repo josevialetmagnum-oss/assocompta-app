@@ -4,7 +4,7 @@ vi.mock("@/lib/association", async () => (await import("../support/contexte")).m
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
 import { prisma } from "@/lib/prisma";
-import { creerMouvement, modifierMouvement, supprimerMouvement } from "@/app/mouvements/actions";
+import { basculerPointage, creerMouvement, modifierMouvement, supprimerMouvement } from "@/app/mouvements/actions";
 import { creerJeuComplet, type Jeu } from "../support/jeu-de-donnees";
 import { verifierBaseDeTest, viderBase } from "../support/base-test";
 import { contexte } from "../support/contexte";
@@ -137,6 +137,26 @@ describe("actions serveur des mouvements", () => {
     const res = await supprimerMouvement(mouvement.id);
     expect(res.error).toBe("Ce mouvement est rapproché : il ne peut plus être supprimé (dépointez-le d'abord).");
     expect(await prisma.mouvement.findUnique({ where: { id: mouvement.id } })).not.toBeNull();
+  });
+
+  it("un mouvement rattaché à un rapprochement validé ne peut pas être dépointé directement", async () => {
+    const rapprochement = await prisma.rapprochement.create({
+      data: { associationId: jeu.associationId, journalId: jeu.journalId, date: new Date("2026-03-20"), solde: 10 },
+    });
+    const mouvement = await prisma.mouvement.create({
+      data: {
+        associationId: jeu.associationId, exerciceId: jeu.exerciceId, journalId: jeu.journalId,
+        date: new Date("2026-03-15"), dateBilan: new Date("2026-03-15"), type: "depense", typeTransaction: "especes", montant: 10,
+        pointe: true, rapprochementId: rapprochement.id,
+        ventilations: { create: [{ sousCategorieId: jeu.sousCategorieDepense, montant: 10 }] },
+      },
+    });
+
+    await basculerPointage(mouvement.id, false);
+
+    const relu = await prisma.mouvement.findUniqueOrThrow({ where: { id: mouvement.id } });
+    expect(relu.pointe).toBe(true);
+    expect(relu.rapprochementId).toBe(rapprochement.id);
   });
 });
 

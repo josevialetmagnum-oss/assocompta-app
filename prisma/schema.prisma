@@ -42,11 +42,12 @@ model Association {
   actif     Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  utilisateurs Utilisateur[]
-  exercices    Exercice[]
-  journaux     Journal[]
-  categories   Categorie[]
-  mouvements   Mouvement[]
+  utilisateurs   Utilisateur[]
+  exercices      Exercice[]
+  journaux       Journal[]
+  categories     Categorie[]
+  mouvements     Mouvement[]
+  rapprochements Rapprochement[]
 }
 
 model Utilisateur {
@@ -114,11 +115,33 @@ model Journal {
   // exerciceDemandeSoldesOuverture()), jamais recalculé automatiquement ensuite.
   soldeInitial  Float       @default(0)
 
-  mouvements            Mouvement[] @relation("MouvementJournal")
-  mouvementsDestination Mouvement[] @relation("MouvementJournalDestination")
+  mouvements            Mouvement[]     @relation("MouvementJournal")
+  mouvementsDestination Mouvement[]     @relation("MouvementJournalDestination")
+  rapprochements        Rapprochement[]
 
   @@unique([associationId, nom])
   @@index([associationId])
+}
+
+// Un rapprochement bancaire validé : fige le solde du relevé à une date donnée comme nouveau point
+// de départ, et verrouille les mouvements qui y ont été rattachés (voir Mouvement.rapprochementId)
+// — ils ne sont plus dépointables individuellement, seule la suppression de CE rapprochement les
+// libère tous ensemble (src/lib/rapprochement.ts). Jamais modifié après coup : seulement créé ou
+// supprimé en bloc.
+model Rapprochement {
+  id            Int         @id @default(autoincrement())
+  associationId Int
+  association   Association @relation(fields: [associationId], references: [id])
+  journalId     Int
+  journal       Journal     @relation(fields: [journalId], references: [id])
+  date          DateTime
+  solde         Float
+  createdAt     DateTime    @default(now())
+
+  mouvements Mouvement[]
+
+  @@index([associationId])
+  @@index([journalId])
 }
 
 // Poste de recette ou de dépense, paramétrable par association (chaque
@@ -177,16 +200,22 @@ model Mouvement {
   // Renseigné seulement pour un virement_interne (l'autre compte impacté).
   journalDestinationId Int?
   journalDestination   Journal? @relation("MouvementJournalDestination", fields: [journalDestinationId], references: [id])
-  // Rapprochement bancaire (pointage manuel).
-  pointe        Boolean   @default(false)
-  pointeLe      DateTime?
-  createdAt     DateTime  @default(now())
+  // Rapprochement bancaire (pointage manuel) : pointe = "vu sur le relevé", vrai dès cette étape.
+  // rapprochementId n'est renseigné qu'une fois le rapprochement VALIDÉ (voir
+  // src/lib/rapprochement.ts) — à partir de là, le mouvement est verrouillé : on ne peut plus le
+  // dépointer qu'en supprimant ce rapprochement dans son ensemble.
+  pointe          Boolean        @default(false)
+  pointeLe        DateTime?
+  rapprochementId Int?
+  rapprochement   Rapprochement? @relation(fields: [rapprochementId], references: [id])
+  createdAt       DateTime       @default(now())
 
   ventilations MouvementVentilation[]
 
   @@index([associationId])
   @@index([journalId])
   @@index([exerciceId])
+  @@index([rapprochementId])
 }
 
 // Répartit un mouvement (recette ou dépense) sur une ou plusieurs sous-catégories : la somme des

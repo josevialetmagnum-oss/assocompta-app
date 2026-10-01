@@ -199,11 +199,15 @@ export async function modifierMouvement(_prevState: FormState, formData: FormDat
   revalidatePath("/");
 }
 
+// Un mouvement déjà rattaché à un rapprochement validé (rapprochementId non nul) est verrouillé :
+// seule la suppression de ce rapprochement (src/lib/rapprochement.ts) peut le dépointer, jamais
+// cette bascule directe — la condition sur rapprochementId ci-dessous ne fait alors rien (0 ligne
+// affectée), en renfort du bouton déjà désactivé côté écran (voir PointageToggle).
 export async function basculerPointage(id: number, pointe: boolean): Promise<void> {
   await exigerEcriture();
   const associationId = await associationCourante();
   await prisma.mouvement.updateMany({
-    where: { id, associationId },
+    where: { id, associationId, rapprochementId: null },
     data: { pointe, pointeLe: pointe ? new Date() : null },
   });
   revalidatePath("/mouvements");

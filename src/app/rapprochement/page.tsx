@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
-import { soldePointeJournal } from "@/lib/tresorerie";
+import { dernierRapprochement, ecartRapprochement, mouvementsNonRapprochesJournal } from "@/lib/rapprochement";
 import { PointageToggle } from "@/app/mouvements/PointageToggle";
+import { ValiderRapprochementForm } from "./ValiderRapprochementForm";
+import { SupprimerRapprochementButton } from "./SupprimerRapprochementButton";
 
 export const dynamic = "force-dynamic";
 
@@ -38,28 +40,19 @@ export default async function RapprochementPage({
   const soldeReleveBrut = sp.solde?.trim();
   const soldeReleve = soldeReleveBrut ? Number(soldeReleveBrut) : null;
 
-  const [soldePointe, aPointer] = await Promise.all([
-    soldePointeJournal(associationId, journal.id, dateReleve),
-    prisma.mouvement.findMany({
-      where: {
-        associationId,
-        pointe: false,
-        date: { lte: dateReleve },
-        OR: [{ journalId: journal.id }, { journalDestinationId: journal.id }],
-      },
-      include: { journal: true, journalDestination: true, ventilations: { include: { sousCategorie: { include: { categorie: true } } } } },
-      orderBy: { date: "asc" },
-    }),
+  const [dernier, ecart, aPointer] = await Promise.all([
+    dernierRapprochement(associationId, journal.id),
+    soldeReleve !== null ? ecartRapprochement(associationId, journal.id, dateReleve, soldeReleve) : Promise.resolve(null),
+    mouvementsNonRapprochesJournal(associationId, journal.id, dateReleve),
   ]);
-
-  const ecart = soldeReleve !== null ? Math.round((soldeReleve - soldePointe) * 100) / 100 : null;
+  const soldeBase = dernier?.solde ?? journal.soldeInitial;
 
   return (
     <main className="mx-auto max-w-[1180px] space-y-6 px-4 py-6 sm:px-8">
       <div>
         <h1 className="text-[34px] leading-tight font-semibold">Rapprochement bancaire</h1>
         <p className="mt-1 text-base text-[var(--texte-discret)]">
-          Compare le solde du relevé à une date donnée avec les mouvements déjà pointés, et liste ceux qui restent à pointer.
+          Pointez les mouvements du relevé jusqu&apos;à écart nul, puis validez pour figer ce point de départ.
         </p>
       </div>
 
@@ -85,10 +78,20 @@ export default async function RapprochementPage({
         </form>
       </section>
 
+      <section className="rounded border p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[15px]">
+            <span className="font-semibold">Dernier rapprochement :</span>{" "}
+            {dernier ? `${dernier.date.toLocaleDateString("fr-FR")} — ${fmt(dernier.solde)} €` : "aucun (solde d'ouverture du journal)"}
+          </p>
+          {dernier && <SupprimerRapprochementButton journalId={journal.id} />}
+        </div>
+      </section>
+
       <section className="grid gap-4 sm:grid-cols-3">
         <div className="rounded border p-5">
-          <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--texte-discret)]">Solde pointé au {dateReleve.toLocaleDateString("fr-FR")}</p>
-          <p className="mt-1 text-2xl font-bold">{fmt(soldePointe)} €</p>
+          <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--texte-discret)]">Solde du dernier rapprochement</p>
+          <p className="mt-1 text-2xl font-bold">{fmt(soldeBase)} €</p>
         </div>
         <div className="rounded border p-5">
           <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--texte-discret)]">Solde du relevé</p>
@@ -99,16 +102,22 @@ export default async function RapprochementPage({
           {ecart === null ? (
             <p className="mt-1 text-2xl font-bold text-[var(--texte-discret)]">—</p>
           ) : ecart === 0 ? (
-            <p className="mt-1 text-2xl font-bold text-[#24603F]">Rapproché ✓</p>
+            <p className="mt-1 text-2xl font-bold text-[#24603F]">Nul ✓</p>
           ) : (
             <p className="mt-1 text-2xl font-bold text-[#A3231B]">{fmt(ecart)} €</p>
           )}
         </div>
       </section>
 
+      {soldeReleve !== null && (
+        <section className="rounded border p-5">
+          <ValiderRapprochementForm journalId={journal.id} date={dateReleveBrut} solde={soldeReleve} ecartNul={ecart === 0} />
+        </section>
+      )}
+
       <section className="overflow-x-auto rounded border px-5 py-3">
         <h2 className="mb-2 mt-2 font-sans text-[17px] font-bold tracking-normal">
-          Mouvements non pointés jusqu&apos;au {dateReleve.toLocaleDateString("fr-FR")}
+          Mouvements non rapprochés jusqu&apos;au {dateReleve.toLocaleDateString("fr-FR")}
         </h2>
         <table className="w-full min-w-[700px] border-collapse text-[15px]">
           <thead>
@@ -123,7 +132,7 @@ export default async function RapprochementPage({
           <tbody>
             {aPointer.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-6 text-center text-[var(--texte-discret)]">Aucun mouvement en attente de pointage.</td>
+                <td colSpan={5} className="py-6 text-center text-[var(--texte-discret)]">Aucun mouvement en attente de rapprochement.</td>
               </tr>
             )}
             {aPointer.map((m) => {
