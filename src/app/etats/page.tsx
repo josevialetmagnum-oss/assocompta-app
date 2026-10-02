@@ -59,6 +59,9 @@ export default async function EtatsPage({ searchParams }: { searchParams: Promis
             </select>
           </label>
           <button type="submit" className="rounded border px-3 py-1.5 text-sm">Afficher</button>
+          {exercice && (
+            <a href={`/etats/pdf?exercice=${exercice.id}`} download className="rounded border px-3 py-1.5 text-sm">Télécharger en PDF</a>
+          )}
         </form>
       </section>
 

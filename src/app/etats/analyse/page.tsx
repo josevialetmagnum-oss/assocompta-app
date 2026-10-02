@@ -1,21 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
 import { exerciceActif } from "@/lib/tresorerie";
-import { analyseParLignes, type LigneAnalyseDemandee } from "@/lib/analyse";
+import { analyseParLignes } from "@/lib/analyse";
+import { lireParametresAnalyse, type ParametresAnalyseBruts } from "@/lib/analyse-params";
 import { ImprimerButton } from "@/components/ImprimerButton";
-import { LignesAnalyseForm, type GroupeOptions, type LigneSaisie } from "./LignesAnalyseForm";
+import { LignesAnalyseForm, type GroupeOptions } from "./LignesAnalyseForm";
 
 export const dynamic = "force-dynamic";
 
 const fmt = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const liste = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v === undefined ? [] : [v]);
-const dateValide = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(new Date(v).getTime()) ? v : null);
-const idOuNull = (v: string | undefined) => (v && Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
-
 export default async function AnalysePage({
   searchParams,
 }: {
-  searchParams: Promise<{ du?: string; au?: string; rec?: string | string[]; dep?: string | string[] }>;
+  searchParams: Promise<ParametresAnalyseBruts>;
 }) {
   const associationId = await associationCourante();
   const sp = await searchParams;
@@ -35,19 +32,10 @@ export default async function AnalysePage({
       .filter((c) => c.type === type && c.sousCategories.length > 0)
       .map((c) => ({ categorie: c.nom, sousCategories: c.sousCategories.map((sc) => ({ id: sc.id, nom: sc.nom })) }));
 
-  const jour = (d: Date) => d.toISOString().slice(0, 10);
-  const du = dateValide(sp.du) ?? (actif ? jour(actif.dateDebut) : jour(new Date()));
-  const au = dateValide(sp.au) ?? (actif ? jour(actif.dateFin) : jour(new Date()));
+  const { du, au, saisies, demandees, periodeInvalide } = lireParametresAnalyse(sp, actif);
+  const lienPdf = `/etats/analyse/pdf?${new URLSearchParams([["du", du], ["au", au], ...saisies.flatMap((l) => [["rec", l.rec], ["dep", l.dep]])]).toString()}`;
 
-  const recs = liste(sp.rec);
-  const deps = liste(sp.dep);
-  const nombre = Math.max(recs.length, deps.length);
-  const saisies: LigneSaisie[] = Array.from({ length: nombre }, (_, i) => ({ rec: recs[i] ?? "", dep: deps[i] ?? "" }));
-  const demandees: LigneAnalyseDemandee[] = saisies.map((l) => ({ sousCategorieRecetteId: idOuNull(l.rec), sousCategorieDepenseId: idOuNull(l.dep) }));
-
-  const demande = nombre > 0;
-  const periodeInvalide = new Date(au).getTime() < new Date(du).getTime();
-  const resultat = demande && !periodeInvalide ? await analyseParLignes(associationId, new Date(du), new Date(au), demandees) : null;
+  const resultat = saisies.length > 0 && !periodeInvalide ? await analyseParLignes(associationId, new Date(du), new Date(au), demandees) : null;
 
   return (
     <main className="mx-auto max-w-[1180px] space-y-6 px-4 py-6 sm:px-8">
@@ -80,7 +68,10 @@ export default async function AnalysePage({
             <h2 className="font-sans text-[17px] font-bold tracking-normal">
               Du {new Date(du).toLocaleDateString("fr-FR")} au {new Date(au).toLocaleDateString("fr-FR")}
             </h2>
-            <ImprimerButton />
+            <div className="no-print flex flex-wrap gap-2">
+              <a href={lienPdf} download className="rounded border px-3 py-1.5 text-sm">Télécharger en PDF</a>
+              <ImprimerButton />
+            </div>
           </div>
           {resultat.doublons.length > 0 && (
             <p className="mb-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">

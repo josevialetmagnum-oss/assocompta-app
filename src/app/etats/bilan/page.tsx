@@ -104,7 +104,10 @@ export default async function BilanPage({ searchParams }: { searchParams: Promis
               {bilan.exercice.libelle} — du {jour(bilan.exercice.dateDebut)} au {jour(bilan.exercice.dateFin)}
               {bilan.exercice.cloture ? ` (clôturé${bilan.exercice.clotureLe ? ` le ${jour(bilan.exercice.clotureLe)}` : ""})` : ""}
             </h2>
-            <ImprimerButton />
+            <div className="no-print flex flex-wrap gap-2">
+              <a href={`/etats/bilan/pdf?exercice=${bilan.exercice.id}`} download className="rounded border px-3 py-1.5 text-sm">Télécharger en PDF</a>
+              <ImprimerButton />
+            </div>
           </div>
 
           <table className="table-impression w-full border-collapse text-[15px]">
