@@ -17,7 +17,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${nomFichier("json", "sauvegarde", association.nom, new Date().toISOString().slice(0, 10))}"`,
+      "Content-Disposition": `attachment; filename="${nomFichier("json", "sauvegarde", "sauvegarde", association.nom, new Date().toISOString().slice(0, 10))}"`,
       "Cache-Control": "private, no-store",
     },
   });

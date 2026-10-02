@@ -15,7 +15,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${nomFichier("csv", "mouvements", association.nom, new Date().toISOString().slice(0, 10))}"`,
+      "Content-Disposition": `attachment; filename="${nomFichier("csv", "mouvements", "mouvements", association.nom, new Date().toISOString().slice(0, 10))}"`,
       "Cache-Control": "private, no-store",
     },
   });

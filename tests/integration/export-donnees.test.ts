@@ -190,8 +190,8 @@ describe("outils d'export", () => {
   });
 
   it("nomFichier", () => {
-    expect(nomFichier("csv", "mouvements", "Club de Judo — Saint-Étienne", "2026-10-02")).toBe("mouvements-club-de-judo-saint-etienne-2026-10-02.csv");
-    expect(nomFichier("json", "../../etc/passwd")).toBe("etc-passwd.json");
-    expect(nomFichier("csv", "???")).toBe("export.csv");
+    expect(nomFichier("csv", "export", "mouvements", "Club de Judo — Saint-Étienne", "2026-10-02")).toBe("mouvements-club-de-judo-saint-etienne-2026-10-02.csv");
+    expect(nomFichier("json", "export", "../../etc/passwd")).toBe("etc-passwd.json");
+    expect(nomFichier("csv", "export", "???")).toBe("export.csv");
   });
 });

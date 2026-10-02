@@ -249,4 +249,4 @@ export class DocumentPdf {
 }
 
 // Nom de fichier PDF sûr (voir nom-fichier.ts).
-export const nomFichierPdf = (...morceaux: string[]): string => nomFichier("pdf", ...morceaux);
+export const nomFichierPdf = (...morceaux: string[]): string => nomFichier("pdf", "etat", ...morceaux);
