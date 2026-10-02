@@ -3,6 +3,7 @@ import { exigerSuperviseur, ConnexionRequise } from "@/lib/association";
 import { listerAssociations } from "@/lib/administration";
 import { AssociationForm } from "./AssociationForm";
 import { BasculeActif } from "./BasculeActif";
+import { SupprimerAssociation } from "./SupprimerAssociation";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,8 @@ export default async function AdministrationPage() {
         <h1 className="text-[34px] leading-tight font-semibold">Associations</h1>
         <p className="mt-1 text-base text-[var(--texte-discret)]">
           Crée une association et son compte trésorier initial. Le trésorier gère ensuite lui-même son
-          paramétrage (journaux, catégories, exercices) et les comptes de consultation.
+          paramétrage (journaux, catégories, exercices) et les comptes de consultation. Une association bloquée
+          n&apos;est plus accessible mais garde ses données ; elle peut alors être supprimée définitivement.
         </p>
       </div>
 
@@ -50,11 +52,14 @@ export default async function AdministrationPage() {
                   {a.actif ? (
                     <span className="rounded-xl bg-[#E3F1E9] px-2.5 py-0.5 text-[13px] font-bold text-[#24603F]">Active</span>
                   ) : (
-                    <span className="rounded-xl bg-[#FCEFD9] px-2.5 py-0.5 text-[13px] font-bold text-[#8A4B00]">Suspendue</span>
+                    <span className="rounded-xl bg-[#FCEFD9] px-2.5 py-0.5 text-[13px] font-bold text-[#8A4B00]">Bloquée</span>
                   )}
                 </td>
                 <td className="py-3 pr-2">
-                  <BasculeActif id={a.id} actif={a.actif} nom={a.nom} />
+                  <div className="flex flex-col items-start gap-3">
+                    <BasculeActif id={a.id} actif={a.actif} nom={a.nom} />
+                    {!a.actif && <SupprimerAssociation id={a.id} nom={a.nom} />}
+                  </div>
                 </td>
               </tr>
             ))}
