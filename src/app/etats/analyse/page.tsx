@@ -1,0 +1,118 @@
+import { prisma } from "@/lib/prisma";
+import { associationCourante } from "@/lib/association";
+import { exerciceActif } from "@/lib/tresorerie";
+import { analyseParLignes, type LigneAnalyseDemandee } from "@/lib/analyse";
+import { LignesAnalyseForm, type GroupeOptions, type LigneSaisie } from "./LignesAnalyseForm";
+
+export const dynamic = "force-dynamic";
+
+const fmt = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const liste = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v === undefined ? [] : [v]);
+const dateValide = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(new Date(v).getTime()) ? v : null);
+const idOuNull = (v: string | undefined) => (v && Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
+
+export default async function AnalysePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ du?: string; au?: string; rec?: string | string[]; dep?: string | string[] }>;
+}) {
+  const associationId = await associationCourante();
+  const sp = await searchParams;
+
+  const [categories, actif] = await Promise.all([
+    prisma.categorie.findMany({
+      where: { associationId },
+      include: { sousCategories: { orderBy: { nom: "asc" } } },
+      orderBy: { nom: "asc" },
+    }),
+    exerciceActif(associationId),
+  ]);
+
+  const groupes = (type: "recette" | "depense"): GroupeOptions[] =>
+    categories
+      .filter((c) => c.type === type && c.sousCategories.length > 0)
+      .map((c) => ({ categorie: c.nom, sousCategories: c.sousCategories.map((sc) => ({ id: sc.id, nom: sc.nom })) }));
+
+  const jour = (d: Date) => d.toISOString().slice(0, 10);
+  const du = dateValide(sp.du) ?? (actif ? jour(actif.dateDebut) : jour(new Date()));
+  const au = dateValide(sp.au) ?? (actif ? jour(actif.dateFin) : jour(new Date()));
+
+  const recs = liste(sp.rec);
+  const deps = liste(sp.dep);
+  const nombre = Math.max(recs.length, deps.length);
+  const saisies: LigneSaisie[] = Array.from({ length: nombre }, (_, i) => ({ rec: recs[i] ?? "", dep: deps[i] ?? "" }));
+  const demandees: LigneAnalyseDemandee[] = saisies.map((l) => ({ sousCategorieRecetteId: idOuNull(l.rec), sousCategorieDepenseId: idOuNull(l.dep) }));
+
+  const demande = nombre > 0;
+  const periodeInvalide = new Date(au).getTime() < new Date(du).getTime();
+  const resultat = demande && !periodeInvalide ? await analyseParLignes(associationId, new Date(du), new Date(au), demandees) : null;
+
+  return (
+    <main className="mx-auto max-w-[1180px] space-y-6 px-4 py-6 sm:px-8">
+      <div>
+        <h1 className="text-[34px] leading-tight font-semibold">Analyse par lignes</h1>
+        <p className="mt-1 text-base text-[var(--texte-discret)]">
+          Composez vos lignes (une sous-catégorie de recette et/ou de dépense par ligne) et choisissez une période : chaque ligne affiche
+          ses recettes, ses dépenses et leur différence. La période porte sur la date bilan des mouvements.
+        </p>
+      </div>
+
+      <section className="rounded border p-5">
+        <LignesAnalyseForm du={du} au={au} initiales={saisies} recettes={groupes("recette")} depenses={groupes("depense")} />
+      </section>
+
+      {periodeInvalide && (
+        <section className="rounded border border-amber-300 bg-amber-50 p-5 text-sm text-amber-800">
+          La date de fin doit être postérieure ou égale à la date de début.
+        </section>
+      )}
+
+      {resultat && (
+        <section className="overflow-x-auto rounded border px-5 py-3">
+          <h2 className="mb-2 mt-2 font-sans text-[17px] font-bold tracking-normal">
+            Du {new Date(du).toLocaleDateString("fr-FR")} au {new Date(au).toLocaleDateString("fr-FR")}
+          </h2>
+          {resultat.doublons.length > 0 && (
+            <p className="mb-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Attention : {resultat.doublons.join(", ")} apparaît sur plusieurs lignes, son montant est compté à chaque fois dans le total.
+            </p>
+          )}
+          <table className="w-full min-w-[760px] border-collapse text-[15px]">
+            <thead>
+              <tr className="border-b text-left text-[13px] text-[var(--texte-discret)]">
+                <th className="py-2 pr-2 font-semibold">Recette</th>
+                <th className="py-2 pr-2 text-right font-semibold">Montant</th>
+                <th className="py-2 pr-2 font-semibold">Dépense</th>
+                <th className="py-2 pr-2 text-right font-semibold">Montant</th>
+                <th className="py-2 pr-2 text-right font-semibold">Différence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resultat.lignes.length === 0 && (
+                <tr><td colSpan={5} className="py-6 text-center text-[var(--texte-discret)]">Choisissez au moins une sous-catégorie.</td></tr>
+              )}
+              {resultat.lignes.map((l, i) => (
+                <tr key={i} className="border-b">
+                  <td className="py-2 pr-2">{l.recette?.libelle ?? "—"}</td>
+                  <td className="py-2 pr-2 text-right">{l.recette ? `${fmt(l.recette.total)} €` : ""}</td>
+                  <td className="py-2 pr-2">{l.depense?.libelle ?? "—"}</td>
+                  <td className="py-2 pr-2 text-right">{l.depense ? `${fmt(l.depense.total)} €` : ""}</td>
+                  <td className="py-2 pr-2 text-right font-semibold">{fmt(l.difference)} €</td>
+                </tr>
+              ))}
+              {resultat.lignes.length > 0 && (
+                <tr className="font-bold">
+                  <td className="py-3 pr-2">Total recettes</td>
+                  <td className="py-3 pr-2 text-right">{fmt(resultat.totalRecettes)} €</td>
+                  <td className="py-3 pr-2">Total dépenses</td>
+                  <td className="py-3 pr-2 text-right">{fmt(resultat.totalDepenses)} €</td>
+                  <td className="py-3 pr-2 text-right">{fmt(resultat.difference)} €</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </section>
+      )}
+    </main>
+  );
+}

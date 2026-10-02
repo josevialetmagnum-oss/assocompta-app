@@ -22,6 +22,7 @@ const ICONES = {
   mouvements: "M12 8v8M8 12h8M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0",
   rapprochement: "M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9",
   etats: "M3 3v18h18M7 15l4-4 3 3 5-6",
+  analyse: "M4 6h16M4 12h16M4 18h10",
   parametrage:
     "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
   administration: "M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z",
@@ -39,7 +40,10 @@ export const MENU_METIER: GroupeMenu[] = [
   },
   {
     titre: "États",
-    entrees: [{ href: "/etats", libelle: "Soldes et résultats", icone: ICONES.etats }],
+    entrees: [
+      { href: "/etats", libelle: "Soldes et résultats", icone: ICONES.etats },
+      { href: "/etats/analyse", libelle: "Analyse par lignes", icone: ICONES.analyse },
+    ],
   },
   {
     titre: "Configuration",

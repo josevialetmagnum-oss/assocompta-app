@@ -46,6 +46,11 @@ describe("entreeActive", () => {
     expect(entreeActive("/parametrage", entrees)).toBe("/parametrage");
   });
 
+  it("l'analyse par lignes a sa propre entrée, distincte de « Soldes et résultats »", () => {
+    expect(entreeActive("/etats/analyse", entrees)).toBe("/etats/analyse");
+    expect(entreeActive("/etats", entrees)).toBe("/etats");
+  });
+
   it("un chemin inconnu ne correspond à rien", () => {
     expect(entreeActive("/autre-chose", entrees)).toBeNull();
   });
