@@ -102,7 +102,7 @@ export default async function BilanPage({ searchParams }: { searchParams: Promis
           <div className="mb-3 mt-2 flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-sans text-[17px] font-bold tracking-normal">
               {bilan.exercice.libelle} — du {jour(bilan.exercice.dateDebut)} au {jour(bilan.exercice.dateFin)}
-              {bilan.exercice.cloture ? " (clôturé)" : ""}
+              {bilan.exercice.cloture ? ` (clôturé${bilan.exercice.clotureLe ? ` le ${jour(bilan.exercice.clotureLe)}` : ""})` : ""}
             </h2>
             <ImprimerButton />
           </div>

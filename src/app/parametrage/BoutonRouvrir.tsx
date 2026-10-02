@@ -1,31 +1,26 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { cloturerExercice } from "./actions";
+import { rouvrirExercice } from "./actions";
 
-export function BoutonCloture({ id, libelle, soldes }: { id: number; libelle: string; soldes: { nom: string; solde: string }[] }) {
+export function BoutonRouvrir({ id, libelle, suivants }: { id: number; libelle: string; suivants: string[] }) {
   const [pending, startTransition] = useTransition();
   const [confirmation, setConfirmation] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
   if (!confirmation) {
     return (
-      <button type="button" onClick={() => setConfirmation(true)} className="text-xs font-semibold text-[#A3231B] underline">
-        Clôturer
+      <button type="button" onClick={() => setConfirmation(true)} className="text-xs font-semibold underline">
+        Rouvrir
       </button>
     );
   }
   return (
     <div className="flex max-w-md flex-col gap-1.5 text-xs">
       <span className="text-[#A3231B]">
-        Clôturer {libelle} ? Plus aucune saisie ni modification n&apos;y sera possible. Les soldes des comptes sont figés et reportés
-        en ouverture de l&apos;exercice suivant :
+        Rouvrir {libelle} ? Ses soldes figés sont supprimés et seront recalculés à la prochaine clôture.
+        {suivants.length > 0 && ` Les exercices suivants déjà clôturés (${suivants.join(", ")}) sont rouverts aussi, car leur ouverture en dépend.`}
       </span>
-      <ul className="ml-3 list-disc">
-        {soldes.map((s) => (
-          <li key={s.nom}>{s.nom} : <span className="font-semibold">{s.solde} €</span></li>
-        ))}
-      </ul>
       {erreur && <span role="alert" className="font-semibold text-[#A3231B]">{erreur}</span>}
       <span className="flex items-center gap-3">
         <button
@@ -33,13 +28,13 @@ export function BoutonCloture({ id, libelle, soldes }: { id: number; libelle: st
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
-              const res = await cloturerExercice(id);
+              const res = await rouvrirExercice(id);
               if (res.error) setErreur(res.error);
             })
           }
           className="font-semibold text-[#A3231B] underline"
         >
-          Confirmer la clôture
+          Confirmer la réouverture
         </button>
         <button type="button" onClick={() => { setConfirmation(false); setErreur(null); }} className="text-[var(--texte-discret)] underline">
           Annuler

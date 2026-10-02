@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { associationCourante, exigerEcriture } from "@/lib/association";
 import { basculerActifCompte, creerCompteLectureSeule } from "@/lib/comptes";
 import { autoriseSoldesOuverture } from "@/lib/tresorerie";
+import { cloturerExerciceAssociation, rouvrirExerciceAssociation } from "@/lib/cloture";
 
 export type FormState = { errors: string[] } | undefined;
 
@@ -116,9 +117,28 @@ export async function creerExercice(_prevState: FormState, formData: FormData): 
   revalidatePath("/");
 }
 
-export async function cloturerExercice(id: number): Promise<void> {
+function revalidatePagesExercice() {
+  revalidatePath("/parametrage");
+  revalidatePath("/mouvements");
+  revalidatePath("/etats");
+  revalidatePath("/etats/bilan");
+  revalidatePath("/");
+}
+
+export async function cloturerExercice(id: number): Promise<{ error?: string }> {
   await exigerEcriture();
   const associationId = await associationCourante();
-  await prisma.exercice.updateMany({ where: { id, associationId }, data: { cloture: true, clotureLe: new Date() } });
-  revalidatePath("/parametrage");
+  const res = await cloturerExerciceAssociation(associationId, id);
+  if (!res.ok) return { error: res.erreur };
+  revalidatePagesExercice();
+  return {};
+}
+
+export async function rouvrirExercice(id: number): Promise<{ error?: string }> {
+  await exigerEcriture();
+  const associationId = await associationCourante();
+  const res = await rouvrirExerciceAssociation(associationId, id);
+  if (!res.ok) return { error: res.erreur };
+  revalidatePagesExercice();
+  return {};
 }

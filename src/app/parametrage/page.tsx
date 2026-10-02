@@ -2,12 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
 import { listerComptesAssociation } from "@/lib/comptes";
 import { autoriseSoldesOuverture } from "@/lib/tresorerie";
+import { bilanExercice } from "@/lib/bilan";
 import { JournalForm } from "./JournalForm";
 import { BasculeActifJournal } from "./BasculeActifJournal";
 import { CategorieForm } from "./CategorieForm";
 import { SousCategorieForm } from "./SousCategorieForm";
 import { ExerciceForm } from "./ExerciceForm";
 import { BoutonCloture } from "./BoutonCloture";
+import { BoutonRouvrir } from "./BoutonRouvrir";
 import { CompteLectureSeuleForm } from "./CompteLectureSeuleForm";
 import { BasculeActifCompte } from "./BasculeActifCompte";
 
@@ -27,6 +29,17 @@ export default async function ParametragePage() {
   ]);
 
   const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR");
+  const fmtMontant = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Soldes qui seraient figés puis reportés à la clôture de chaque exercice encore ouvert (aperçu
+  // montré dans la confirmation), et exercices suivants que la réouverture d'un exercice clôturé rouvrirait aussi.
+  const apercus = new Map<number, { nom: string; solde: string }[]>();
+  for (const ex of exercices.filter((e) => !e.cloture)) {
+    const bilan = await bilanExercice(associationId, ex.id);
+    apercus.set(ex.id, (bilan?.comptes ?? []).map((c) => ({ nom: c.nom, solde: fmtMontant(c.cloture) })));
+  }
+  const suivantsCloturesDe = (ex: (typeof exercices)[number]) =>
+    exercices.filter((e) => e.cloture && e.dateDebut > ex.dateDebut).map((e) => e.libelle);
 
   return (
     <main className="mx-auto max-w-[1180px] space-y-6 px-4 py-6 sm:px-8">
@@ -108,12 +121,20 @@ export default async function ParametragePage() {
                 <td className="py-3 pr-2">{fmtDate(ex.dateDebut)} — {fmtDate(ex.dateFin)}</td>
                 <td className="py-3 pr-2">
                   {ex.cloture ? (
-                    <span className="rounded-xl bg-[#F0EDE5] px-2.5 py-0.5 text-[13px] font-bold text-[var(--texte-discret)]">Clôturé</span>
+                    <span className="rounded-xl bg-[#F0EDE5] px-2.5 py-0.5 text-[13px] font-bold text-[var(--texte-discret)]">
+                      Clôturé{ex.clotureLe ? ` le ${fmtDate(ex.clotureLe)}` : ""}
+                    </span>
                   ) : (
                     <span className="rounded-xl bg-[#E3F1E9] px-2.5 py-0.5 text-[13px] font-bold text-[#24603F]">Ouvert</span>
                   )}
                 </td>
-                <td className="py-3 pr-2">{!ex.cloture && <BoutonCloture id={ex.id} libelle={ex.libelle} />}</td>
+                <td className="py-3 pr-2">
+                  {ex.cloture ? (
+                    <BoutonRouvrir id={ex.id} libelle={ex.libelle} suivants={suivantsCloturesDe(ex)} />
+                  ) : (
+                    <BoutonCloture id={ex.id} libelle={ex.libelle} soldes={apercus.get(ex.id) ?? []} />
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

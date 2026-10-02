@@ -5,9 +5,10 @@
 //    internes se compensant).
 //
 // Un mouvement appartient à l'exercice où il a été saisi (Mouvement.exerciceId), comme dans l'état
-// « Soldes et résultats » : les deux états donnent donc toujours les mêmes totaux. L'ouverture d'un
-// compte = son solde d'ouverture initial + tous les mouvements des exercices qui commencent avant
-// celui-ci.
+// « Soldes et résultats » : les deux états donnent donc toujours les mêmes totaux.
+// Ouverture d'un compte : si un exercice antérieur est clôturé, son solde figé à la clôture
+// (SoldeCloture, voir src/lib/cloture.ts) + les mouvements des exercices intermédiaires encore
+// ouverts ; sinon, son solde d'ouverture initial + tous les mouvements des exercices antérieurs.
 
 import { prisma } from "@/lib/prisma";
 
@@ -17,7 +18,7 @@ export type BlocBilan = { categories: CategorieBilan[]; total: number };
 export type CompteBilan = { journalId: number; nom: string; ouverture: number; variation: number; cloture: number };
 
 export type Bilan = {
-  exercice: { id: number; libelle: string; dateDebut: Date; dateFin: Date; cloture: boolean };
+  exercice: { id: number; libelle: string; dateDebut: Date; dateFin: Date; cloture: boolean; clotureLe: Date | null };
   recettes: BlocBilan;
   depenses: BlocBilan;
   resultat: number;
@@ -65,9 +66,17 @@ export async function bilanExercice(associationId: number, exerciceId: number): 
     }),
     prisma.mouvement.findMany({
       where: { associationId, exercice: { dateDebut: { lt: exercice.dateDebut } } },
-      select: { journalId: true, journalDestinationId: true, type: true, montant: true },
+      select: { journalId: true, journalDestinationId: true, type: true, montant: true, exercice: { select: { dateDebut: true } } },
     }),
   ]);
+
+  // Dernier exercice clôturé avant celui-ci, dont les soldes figés servent de point de départ.
+  const exerciceFige = await prisma.exercice.findFirst({
+    where: { associationId, cloture: true, dateDebut: { lt: exercice.dateDebut }, soldesCloture: { some: {} } },
+    orderBy: { dateDebut: "desc" },
+    include: { soldesCloture: true },
+  });
+  const soldesFiges = new Map((exerciceFige?.soldesCloture ?? []).map((sc) => [sc.journalId, sc.solde]));
 
   const totalParSousCategorie = new Map(ventilations.map((v) => [v.sousCategorieId, v._sum.montant ?? 0]));
 
@@ -87,17 +96,24 @@ export async function bilanExercice(associationId: number, exerciceId: number): 
 
   const variations = new Map<number, number>();
   ajouterEffets(variations, mouvementsExercice);
-  const ouvertures = new Map<number, number>(journaux.map((j) => [j.id, j.soldeInitial]));
-  ajouterEffets(ouvertures, mouvementsAnterieurs);
+  // Deux cumuls : depuis le début (comptes sans solde figé) et depuis la clôture figée (les autres).
+  const depuisLeDebut = new Map<number, number>(journaux.map((j) => [j.id, j.soldeInitial]));
+  ajouterEffets(depuisLeDebut, mouvementsAnterieurs);
+  const depuisLaCloture = new Map<number, number>();
+  ajouterEffets(
+    depuisLaCloture,
+    exerciceFige ? mouvementsAnterieurs.filter((m) => m.exercice.dateDebut.getTime() > exerciceFige.dateDebut.getTime()) : [],
+  );
 
   const comptes: CompteBilan[] = journaux.map((j) => {
-    const ouverture = arrondi(ouvertures.get(j.id) ?? 0);
+    const fige = soldesFiges.get(j.id);
+    const ouverture = arrondi(fige !== undefined ? fige + (depuisLaCloture.get(j.id) ?? 0) : (depuisLeDebut.get(j.id) ?? 0));
     const variation = arrondi(variations.get(j.id) ?? 0);
     return { journalId: j.id, nom: j.nom, ouverture, variation, cloture: arrondi(ouverture + variation) };
   });
 
   return {
-    exercice: { id: exercice.id, libelle: exercice.libelle, dateDebut: exercice.dateDebut, dateFin: exercice.dateFin, cloture: exercice.cloture },
+    exercice: { id: exercice.id, libelle: exercice.libelle, dateDebut: exercice.dateDebut, dateFin: exercice.dateFin, cloture: exercice.cloture, clotureLe: exercice.clotureLe },
     recettes,
     depenses,
     resultat: arrondi(recettes.total - depenses.total),

@@ -96,7 +96,8 @@ model Exercice {
   cloture       Boolean   @default(false)
   clotureLe     DateTime?
 
-  mouvements Mouvement[]
+  mouvements    Mouvement[]
+  soldesCloture SoldeCloture[]
 
   @@unique([associationId, libelle])
   @@index([associationId])
@@ -118,6 +119,7 @@ model Journal {
   mouvements            Mouvement[]     @relation("MouvementJournal")
   mouvementsDestination Mouvement[]     @relation("MouvementJournalDestination")
   rapprochements        Rapprochement[]
+  soldesCloture         SoldeCloture[]
 
   @@unique([associationId, nom])
   @@index([associationId])
@@ -230,4 +232,18 @@ model MouvementVentilation {
 
   @@index([mouvementId])
   @@index([sousCategorieId])
+}
+
+// Solde de chaque compte figé à la clôture d'un exercice : il devient l'ouverture de l'exercice suivant
+// (voir src/lib/bilan.ts). Supprimé à la réouverture de l'exercice.
+model SoldeCloture {
+  id         Int      @id @default(autoincrement())
+  exerciceId Int
+  exercice   Exercice @relation(fields: [exerciceId], references: [id], onDelete: Cascade)
+  journalId  Int
+  journal    Journal  @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  solde      Float
+
+  @@unique([exerciceId, journalId])
+  @@index([journalId])
 }

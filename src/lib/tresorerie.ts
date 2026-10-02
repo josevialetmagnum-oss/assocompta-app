@@ -15,13 +15,15 @@ export async function exerciceActif(associationId: number) {
 }
 
 // Autorise la saisie des soldes d'ouverture des journaux à la création d'un exercice : seulement
-// si l'exercice précédent (le plus récent déjà créé, s'il y en a un) n'a reçu aucun mouvement —
+// si l'exercice précédent (le plus récent déjà créé, s'il y en a un) est ouvert et n'a reçu aucun mouvement —
 // reprise d'un compte existant avant tout usage de l'application, ou premier exercice de
 // l'association. Dès qu'un exercice a été utilisé, le solde se déduit des mouvements (voir
 // soldesJournaux) et ne doit plus être modifié à la main, pour ne jamais corrompre l'historique.
 export async function autoriseSoldesOuverture(associationId: number): Promise<boolean> {
   const precedent = await prisma.exercice.findFirst({ where: { associationId }, orderBy: { dateDebut: "desc" } });
   if (!precedent) return true;
+  // Un exercice clôturé a figé ses soldes, reportés tels quels : ne plus les écraser à la main.
+  if (precedent.cloture) return false;
   const nombreMouvements = await prisma.mouvement.count({ where: { exerciceId: precedent.id } });
   return nombreMouvements === 0;
 }
