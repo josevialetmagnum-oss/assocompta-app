@@ -3,6 +3,7 @@
 // Cadre commun de l'application : menu latéral, barre du haut (association courante, compte) et
 // zone de contenu. Repris du même schéma que raisins-app (LBSOFT).
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -54,9 +55,14 @@ function Menu({ donnees, chemin, surNavigation }: { donnees: DonneesCadre; chemi
 
   return (
     <div className="flex h-full flex-col gap-1 overflow-y-auto px-3.5 py-4">
-      <div className="mb-1 flex flex-col gap-0.5 border-b border-white/20 px-2 pb-4">
-        <span className="text-[24px] font-bold tracking-tight text-white">AssoCompta</span>
-        <span className="text-[13px] text-[#B9DBC7]">Trésorerie associative</span>
+      <div className="mb-1 flex flex-col gap-3 border-b border-white/20 px-1 pb-4">
+        <div className="flex h-[62px] items-center justify-center overflow-hidden rounded-[14px] bg-white px-2.5">
+          <Image src="/lbsoft-logo.png" alt="LBSOFT, solutions logicielles" width={1920} height={600} priority unoptimized className="h-[54px] w-auto max-w-full object-contain" />
+        </div>
+        <div className="flex flex-col gap-0.5 px-2">
+          <span className="text-[24px] font-bold tracking-tight text-white">AssoCompta</span>
+          <span className="text-[13px] text-[#B9DBC7]">Trésorerie associative</span>
+        </div>
       </div>
 
       <nav aria-label="Navigation principale" className="flex flex-col">

@@ -41,5 +41,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|connexion).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|lbsoft-logo.png|connexion).*)"],
 };
