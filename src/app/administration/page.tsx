@@ -4,6 +4,7 @@ import { listerAssociations } from "@/lib/administration";
 import { AssociationForm } from "./AssociationForm";
 import { BasculeActif } from "./BasculeActif";
 import { SupprimerAssociation } from "./SupprimerAssociation";
+import { ModifierAssociation } from "./ModifierAssociation";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +23,17 @@ export default async function AdministrationPage() {
         </p>
       </div>
 
-      <section className="rounded border p-5">
+      <section className="space-y-3 rounded border p-5">
+        <div>
+          <h2 className="font-sans text-[17px] font-bold tracking-normal">Nouvelle association</h2>
+          <p className="text-sm text-[var(--texte-discret)]">
+            Saisissez son nom et le compte de son trésorier (email + mot de passe initial à lui communiquer).
+          </p>
+        </div>
         <AssociationForm />
       </section>
+
+      <h2 className="font-sans text-[17px] font-bold tracking-normal">Associations existantes</h2>
 
       <section className="overflow-x-auto rounded border px-5 py-3">
         <table className="w-full min-w-[560px] border-collapse text-[15px]">
@@ -57,6 +66,7 @@ export default async function AdministrationPage() {
                 </td>
                 <td className="py-3 pr-2">
                   <div className="flex flex-col items-start gap-3">
+                    <ModifierAssociation id={a.id} nom={a.nom} tresoriers={a.utilisateurs.map((u) => ({ id: u.id, email: u.email }))} />
                     <BasculeActif id={a.id} actif={a.actif} nom={a.nom} />
                     {!a.actif && <SupprimerAssociation id={a.id} nom={a.nom} />}
                   </div>

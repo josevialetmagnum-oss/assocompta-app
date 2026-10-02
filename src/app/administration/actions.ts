@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { exigerSuperviseur } from "@/lib/association";
-import { creerAssociation, basculerActifAssociation, supprimerAssociation } from "@/lib/administration";
+import { creerAssociation, basculerActifAssociation, modifierAssociation, supprimerAssociation } from "@/lib/administration";
 
 export type FormState = { errors: string[] } | undefined;
 
@@ -32,4 +32,22 @@ export async function supprimerAssociationAction(id: number, nomConfirme: string
   if (!res.ok) return { error: res.erreur };
   revalidatePath("/administration");
   return {};
+}
+
+export async function modifierAssociationAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  await exigerSuperviseur();
+  const id = Number(formData.get("id"));
+  const nom = String(formData.get("nom") ?? "");
+  const tresoriers = String(formData.get("tresoriers") ?? "")
+    .split(",")
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n > 0)
+    .map((tid) => ({
+      id: tid,
+      email: String(formData.get(`email_${tid}`) ?? ""),
+      motDePasse: String(formData.get(`motDePasse_${tid}`) ?? ""),
+    }));
+  const res = await modifierAssociation(id, nom, tresoriers);
+  if (!res.ok) return { errors: [res.erreur] };
+  revalidatePath("/administration");
 }
