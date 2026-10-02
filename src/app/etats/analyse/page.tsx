@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
 import { exerciceActif } from "@/lib/tresorerie";
 import { analyseParLignes, type LigneAnalyseDemandee } from "@/lib/analyse";
-import { ImprimerButton } from "./ImprimerButton";
+import { ImprimerButton } from "@/components/ImprimerButton";
 import { LignesAnalyseForm, type GroupeOptions, type LigneSaisie } from "./LignesAnalyseForm";
 
 export const dynamic = "force-dynamic";
