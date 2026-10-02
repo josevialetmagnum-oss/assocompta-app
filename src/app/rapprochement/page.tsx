@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
-import { dernierRapprochement, ecartRapprochement, mouvementsNonRapprochesJournal } from "@/lib/rapprochement";
+import { dernierRapprochement, ecartRapprochement, listerRapprochements, mouvementsDuRapprochement, mouvementsNonRapprochesJournal } from "@/lib/rapprochement";
 import { PointageToggle } from "@/app/mouvements/PointageToggle";
 import { ValiderRapprochementForm } from "./ValiderRapprochementForm";
 import { SupprimerRapprochementButton } from "./SupprimerRapprochementButton";
@@ -13,7 +13,7 @@ const aujourdHui = () => new Date().toISOString().slice(0, 10);
 export default async function RapprochementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ journal?: string; date?: string; solde?: string }>;
+  searchParams: Promise<{ journal?: string; date?: string; solde?: string; detail?: string }>;
 }) {
   const associationId = await associationCourante();
   const sp = await searchParams;
@@ -40,12 +40,25 @@ export default async function RapprochementPage({
   const soldeReleveBrut = sp.solde?.trim();
   const soldeReleve = soldeReleveBrut ? Number(soldeReleveBrut) : null;
 
-  const [dernier, ecart, aPointer] = await Promise.all([
+  const [historique, dernier, ecart, aPointer] = await Promise.all([
+    listerRapprochements(associationId, journal.id),
     dernierRapprochement(associationId, journal.id),
     soldeReleve !== null ? ecartRapprochement(associationId, journal.id, dateReleve, soldeReleve) : Promise.resolve(null),
     mouvementsNonRapprochesJournal(associationId, journal.id, dateReleve),
   ]);
   const soldeBase = dernier?.solde ?? journal.soldeInitial;
+
+  // Détail d'un rapprochement de l'historique (n'importe lequel, du moment qu'il appartient à ce compte).
+  const detailId = sp.detail ? Number(sp.detail) : null;
+  const detail = detailId ? historique.find((h) => h.id === detailId) ?? null : null;
+  const mouvementsDetail = detail ? await mouvementsDuRapprochement(associationId, detail.id) : [];
+  const lienDetail = (id: number | null) => {
+    const q = new URLSearchParams({ journal: String(journal.id) });
+    if (sp.date) q.set("date", sp.date);
+    if (soldeReleveBrut) q.set("solde", soldeReleveBrut);
+    if (id !== null) q.set("detail", String(id));
+    return `/rapprochement?${q.toString()}`;
+  };
 
   return (
     <main className="mx-auto max-w-[1180px] space-y-6 px-4 py-6 sm:px-8">
@@ -78,14 +91,74 @@ export default async function RapprochementPage({
         </form>
       </section>
 
-      <section className="rounded border p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[15px]">
-            <span className="font-semibold">Dernier rapprochement :</span>{" "}
-            {dernier ? `${dernier.date.toLocaleDateString("fr-FR")} — ${fmt(dernier.solde)} €` : "aucun (solde d'ouverture du journal)"}
-          </p>
-          {dernier && <SupprimerRapprochementButton journalId={journal.id} />}
-        </div>
+      <section className="overflow-x-auto rounded border px-5 py-3">
+        <h2 className="mb-1 mt-2 font-sans text-[17px] font-bold tracking-normal">Rapprochements effectués — {journal.nom}</h2>
+        <p className="mb-2 text-sm text-[var(--texte-discret)]">
+          Seul le plus récent peut être supprimé : ses mouvements sont alors dépointés. Les précédents le deviennent à leur tour.
+        </p>
+        <table className="w-full min-w-[640px] border-collapse text-[15px]">
+          <thead>
+            <tr className="border-b text-left text-[13px] text-[var(--texte-discret)]">
+              <th className="py-2 pr-2 font-semibold">Date du relevé</th>
+              <th className="py-2 pr-2 text-right font-semibold">Solde</th>
+              <th className="py-2 pr-2 text-right font-semibold">Mouvements</th>
+              <th className="py-2 pr-2 font-semibold">Validé le</th>
+              <th className="py-2 pr-2 font-semibold"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {historique.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-4 text-[var(--texte-discret)]">Aucun rapprochement validé (le solde de départ est le solde d&apos;ouverture du journal).</td>
+              </tr>
+            )}
+            {historique.map((h, i) => (
+              <tr key={h.id} className={`border-b ${detail?.id === h.id ? "bg-[#EEF3EC]" : ""}`}>
+                <td className="py-2.5 pr-2 font-semibold">
+                  {h.date.toLocaleDateString("fr-FR")}
+                  {i === 0 && <span className="ml-2 rounded-xl bg-[#E3F1E9] px-2 py-0.5 text-[12px] font-bold text-[#24603F]">Dernier</span>}
+                </td>
+                <td className="py-2.5 pr-2 text-right">{fmt(h.solde)} €</td>
+                <td className="py-2.5 pr-2 text-right">{h.nombreMouvements}</td>
+                <td className="py-2.5 pr-2">{h.valideLe.toLocaleDateString("fr-FR")}</td>
+                <td className="py-2.5 pr-2">
+                  <div className="flex flex-wrap items-center justify-end gap-4">
+                    <a href={lienDetail(detail?.id === h.id ? null : h.id)} className="text-sm font-semibold text-[var(--accent-fonce)]">
+                      {detail?.id === h.id ? "Masquer" : "Voir les mouvements"}
+                    </a>
+                    {i === 0 && <SupprimerRapprochementButton journalId={journal.id} rapprochementId={h.id} />}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {detail && (
+          <div className="mt-4 border-t pt-3">
+            <h3 className="mb-2 font-sans text-[15px] font-bold tracking-normal">
+              Mouvements du rapprochement du {detail.date.toLocaleDateString("fr-FR")} ({detail.nombreMouvements})
+            </h3>
+            <ul className="divide-y text-[15px]">
+              {mouvementsDetail.map((m) => {
+                const estDestination = m.journalDestinationId === journal.id;
+                const signe = m.type === "recette" || estDestination ? "+" : "−";
+                return (
+                  <li key={m.id} className="flex flex-wrap items-baseline justify-between gap-3 py-2">
+                    <span>
+                      {m.date.toLocaleDateString("fr-FR")} —{" "}
+                      {m.type === "virement_interne"
+                        ? `Virement ${estDestination ? `← ${m.journal.nom}` : `→ ${m.journalDestination?.nom}`}`
+                        : m.ventilations.map((v) => `${v.sousCategorie.categorie.nom} — ${v.sousCategorie.nom}`).join(", ")}
+                      {m.tiers && <span className="text-[var(--texte-discret)]"> ({m.tiers})</span>}
+                    </span>
+                    <span className="font-semibold">{signe} {fmt(m.montant)} €</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">

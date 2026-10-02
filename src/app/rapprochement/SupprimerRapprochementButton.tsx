@@ -5,7 +5,7 @@ import { supprimerDernierRapprochementAction } from "./actions";
 
 // Confirmation en deux clics (pas de window.confirm — voir raisins-app pour la raison) : supprimer
 // le dernier rapprochement dépointe tous les mouvements qui y étaient rattachés.
-export function SupprimerRapprochementButton({ journalId }: { journalId: number }) {
+export function SupprimerRapprochementButton({ journalId, rapprochementId }: { journalId: number; rapprochementId: number }) {
   const [pending, startTransition] = useTransition();
   const [confirmation, setConfirmation] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -13,7 +13,7 @@ export function SupprimerRapprochementButton({ journalId }: { journalId: number 
   if (!confirmation) {
     return (
       <button type="button" onClick={() => setConfirmation(true)} className="text-sm font-semibold text-[#A3231B]">
-        Supprimer ce rapprochement
+        Supprimer
       </button>
     );
   }
@@ -27,7 +27,7 @@ export function SupprimerRapprochementButton({ journalId }: { journalId: number 
         onClick={() => {
           setErreur(null);
           startTransition(async () => {
-            const res = await supprimerDernierRapprochementAction(journalId);
+            const res = await supprimerDernierRapprochementAction(journalId, rapprochementId);
             if (res.error) {
               setErreur(res.error);
               setConfirmation(false);

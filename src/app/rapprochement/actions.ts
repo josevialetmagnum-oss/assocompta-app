@@ -21,10 +21,10 @@ export async function validerRapprochementAction(_prevState: FormState, formData
   revalidatePath("/mouvements");
 }
 
-export async function supprimerDernierRapprochementAction(journalId: number): Promise<{ error?: string }> {
+export async function supprimerDernierRapprochementAction(journalId: number, rapprochementId?: number): Promise<{ error?: string }> {
   await exigerEcriture();
   const associationId = await associationCourante();
-  const res = await supprimerDernierRapprochement(associationId, journalId);
+  const res = await supprimerDernierRapprochement(associationId, journalId, rapprochementId);
   if (!res.ok) return { error: res.erreur };
 
   revalidatePath("/rapprochement");

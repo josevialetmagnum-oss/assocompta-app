@@ -16,7 +16,7 @@ export type DernierRapprochement = { id: number; date: Date; solde: number } | n
 export async function dernierRapprochement(associationId: number, journalId: number): Promise<DernierRapprochement> {
   const r = await prisma.rapprochement.findFirst({
     where: { associationId, journalId },
-    orderBy: { date: "desc" },
+    orderBy: [{ date: "desc" }, { id: "desc" }],
   });
   return r ? { id: r.id, date: r.date, solde: r.solde } : null;
 }
@@ -29,6 +29,28 @@ export async function soldeBaseRapprochement(associationId: number, journalId: n
   const journal = await prisma.journal.findFirst({ where: { id: journalId, associationId } });
   if (!journal) throw new Error("Journal introuvable.");
   return { date: null, solde: journal.soldeInitial };
+}
+
+export type LigneHistorique = { id: number; date: Date; solde: number; valideLe: Date; nombreMouvements: number };
+
+// Historique des rapprochements d'un compte, du plus récent au plus ancien (même ordre que
+// dernierRapprochement : le premier de la liste est le seul que l'on peut supprimer).
+export async function listerRapprochements(associationId: number, journalId: number): Promise<LigneHistorique[]> {
+  const lignes = await prisma.rapprochement.findMany({
+    where: { associationId, journalId },
+    orderBy: [{ date: "desc" }, { id: "desc" }],
+    include: { _count: { select: { mouvements: true } } },
+  });
+  return lignes.map((r) => ({ id: r.id, date: r.date, solde: r.solde, valideLe: r.createdAt, nombreMouvements: r._count.mouvements }));
+}
+
+// Mouvements rattachés à un rapprochement (cloisonné par association).
+export async function mouvementsDuRapprochement(associationId: number, rapprochementId: number) {
+  return prisma.mouvement.findMany({
+    where: { associationId, rapprochementId },
+    include: { journal: true, journalDestination: true, ventilations: { include: { sousCategorie: { include: { categorie: true } } } } },
+    orderBy: [{ date: "asc" }, { id: "asc" }],
+  });
 }
 
 type MouvementDirection = { journalId: number; journalDestinationId: number | null; type: "recette" | "depense" | "virement_interne"; montant: number };
@@ -123,9 +145,18 @@ export async function validerRapprochement(
 
 // Supprime le dernier rapprochement du journal : dépointe tous les mouvements qui y étaient
 // rattachés (jamais ceux d'un rapprochement antérieur) avant de le supprimer.
-export async function supprimerDernierRapprochement(associationId: number, journalId: number): Promise<ResultatValidation> {
+// Si `rapprochementId` est fourni, il doit être bien le dernier : la page affichée peut dater (un
+// autre rapprochement a pu être validé ou supprimé entre-temps), on ne supprime jamais « un autre ».
+export async function supprimerDernierRapprochement(
+  associationId: number,
+  journalId: number,
+  rapprochementId?: number,
+): Promise<ResultatValidation> {
   const dernier = await dernierRapprochement(associationId, journalId);
   if (!dernier) return { ok: false, erreur: "Aucun rapprochement à supprimer pour ce journal." };
+  if (rapprochementId !== undefined && dernier.id !== rapprochementId) {
+    return { ok: false, erreur: "Ce rapprochement n'est plus le dernier : rechargez la page." };
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.mouvement.updateMany({
