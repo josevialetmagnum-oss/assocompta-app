@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { deconnecter } from "@/app/compte/actions";
-import { ENTREE_COMPTE, entreeActive, entreesDuMenu, lectureSeuleSurCettePage, LIBELLE_ROLE, pageSansCadre, type GroupeMenu } from "@/lib/navigation";
+import { ENTREE_COMPTE, entreeActive, entreesDuMenu, lectureSeuleSurCettePage, LIBELLE_ROLE, pageDeConsultation, pageSansCadre, type GroupeMenu } from "@/lib/navigation";
 
 export type DonneesCadre = {
   menu: GroupeMenu[];
@@ -95,12 +95,12 @@ export function Cadre({ donnees, children }: { donnees: DonneesCadre; children: 
 
   return (
     <div className="flex min-h-screen bg-[var(--fond-app)]">
-      <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 bg-[var(--foret)] text-white lg:block" aria-label="Menu">
+      <aside className="no-print sticky top-0 hidden h-screen w-[260px] shrink-0 bg-[var(--foret)] text-white lg:block" aria-label="Menu">
         <Menu donnees={donnees} chemin={chemin} />
       </aside>
 
       {ouvert && (
-        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+        <div className="no-print fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <button type="button" className="absolute inset-0 bg-black/50" aria-label="Fermer le menu" onClick={() => setOuvert(false)} />
           <div className="absolute inset-y-0 left-0 w-[280px] max-w-[85vw] bg-[var(--foret)] text-white shadow-xl">
             <Menu donnees={donnees} chemin={chemin} surNavigation={() => setOuvert(false)} />
@@ -109,7 +109,7 @@ export function Cadre({ donnees, children }: { donnees: DonneesCadre; children: 
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-[var(--bordure)] bg-[#FBFAF7] px-4 sm:px-8">
+        <header className="no-print sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-[var(--bordure)] bg-[#FBFAF7] px-4 sm:px-8">
           <button
             type="button"
             onClick={() => setOuvert(true)}
@@ -159,7 +159,7 @@ export function Cadre({ donnees, children }: { donnees: DonneesCadre; children: 
         </header>
 
         <div className="min-w-0 flex-1">
-          {lectureSeuleIci ? (
+          {lectureSeuleIci && !pageDeConsultation(chemin) ? (
             <fieldset disabled className="m-0 min-w-0 border-0 p-0">
               {children}
             </fieldset>

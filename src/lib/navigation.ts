@@ -87,6 +87,12 @@ export function lectureSeuleSurCettePage(chemin: string, estLectureSeule: boolea
   return estLectureSeule && entreeActive(chemin, ENTREES_METIER) !== null;
 }
 
+// Pages d'états : on y consulte seulement (période, lignes à afficher). Leurs formulaires de
+// sélection restent utilisables en lecture seule, ils ne modifient aucune donnée.
+export function pageDeConsultation(chemin: string): boolean {
+  return chemin === "/etats" || chemin.startsWith("/etats/");
+}
+
 // L'entrée active pour un chemin : la plus spécifique qui correspond. L'accueil ne correspond qu'à
 // « / » exactement. Renvoie l'href de l'entrée, ou null.
 export function entreeActive(chemin: string, entrees: EntreeMenu[]): string | null {

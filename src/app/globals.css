@@ -44,3 +44,38 @@ button.bg-neutral-900:hover,
 a.bg-neutral-900:hover {
   background-color: var(--accent-fonce) !important;
 }
+
+/* Impression des états : seul le contenu est imprimé (ni menu, ni barre du haut, ni formulaires). */
+.apercu-impression {
+  display: none;
+}
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .apercu-impression {
+    display: block;
+  }
+  body,
+  section.rounded.border {
+    background: #fff !important;
+  }
+  section.rounded.border {
+    border: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .table-impression {
+    min-width: 0 !important;
+  }
+  .table-impression-conteneur {
+    overflow: visible !important;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}

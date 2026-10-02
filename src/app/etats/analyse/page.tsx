@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
 import { exerciceActif } from "@/lib/tresorerie";
 import { analyseParLignes, type LigneAnalyseDemandee } from "@/lib/analyse";
+import { ImprimerButton } from "./ImprimerButton";
 import { LignesAnalyseForm, type GroupeOptions, type LigneSaisie } from "./LignesAnalyseForm";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,8 @@ export default async function AnalysePage({
   const associationId = await associationCourante();
   const sp = await searchParams;
 
-  const [categories, actif] = await Promise.all([
+  const [association, categories, actif] = await Promise.all([
+    prisma.association.findUniqueOrThrow({ where: { id: associationId } }),
     prisma.categorie.findMany({
       where: { associationId },
       include: { sousCategories: { orderBy: { nom: "asc" } } },
@@ -49,7 +51,7 @@ export default async function AnalysePage({
 
   return (
     <main className="mx-auto max-w-[1180px] space-y-6 px-4 py-6 sm:px-8">
-      <div>
+      <div className="no-print">
         <h1 className="text-[34px] leading-tight font-semibold">Analyse par lignes</h1>
         <p className="mt-1 text-base text-[var(--texte-discret)]">
           Composez vos lignes (une sous-catégorie de recette et/ou de dépense par ligne) et choisissez une période : chaque ligne affiche
@@ -57,7 +59,7 @@ export default async function AnalysePage({
         </p>
       </div>
 
-      <section className="rounded border p-5">
+      <section className="no-print rounded border p-5">
         <LignesAnalyseForm du={du} au={au} initiales={saisies} recettes={groupes("recette")} depenses={groupes("depense")} />
       </section>
 
@@ -68,16 +70,24 @@ export default async function AnalysePage({
       )}
 
       {resultat && (
-        <section className="overflow-x-auto rounded border px-5 py-3">
-          <h2 className="mb-2 mt-2 font-sans text-[17px] font-bold tracking-normal">
-            Du {new Date(du).toLocaleDateString("fr-FR")} au {new Date(au).toLocaleDateString("fr-FR")}
-          </h2>
+        <section className="table-impression-conteneur overflow-x-auto rounded border px-5 py-3">
+          <div className="apercu-impression mb-4">
+            <p className="text-[13px] text-[var(--texte-discret)]">{association.nom}</p>
+            <h1 className="text-2xl font-semibold">Analyse par lignes</h1>
+            <p className="text-[13px] text-[var(--texte-discret)]">Édité le {new Date().toLocaleDateString("fr-FR")}</p>
+          </div>
+          <div className="mb-2 mt-2 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-sans text-[17px] font-bold tracking-normal">
+              Du {new Date(du).toLocaleDateString("fr-FR")} au {new Date(au).toLocaleDateString("fr-FR")}
+            </h2>
+            <ImprimerButton />
+          </div>
           {resultat.doublons.length > 0 && (
             <p className="mb-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               Attention : {resultat.doublons.join(", ")} apparaît sur plusieurs lignes, son montant est compté à chaque fois dans le total.
             </p>
           )}
-          <table className="w-full min-w-[760px] border-collapse text-[15px]">
+          <table className="table-impression w-full min-w-[760px] border-collapse text-[15px]">
             <thead>
               <tr className="border-b text-left text-[13px] text-[var(--texte-discret)]">
                 <th className="py-2 pr-2 font-semibold">Recette</th>

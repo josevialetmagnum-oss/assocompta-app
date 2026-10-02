@@ -5,6 +5,7 @@ import {
   lectureSeuleSurCettePage,
   menuPour,
   MENU_METIER,
+  pageDeConsultation,
   peutVoirAdministration,
   peutVoirLeMetier,
 } from "@/lib/navigation";
@@ -53,6 +54,19 @@ describe("entreeActive", () => {
 
   it("un chemin inconnu ne correspond à rien", () => {
     expect(entreeActive("/autre-chose", entrees)).toBeNull();
+  });
+});
+
+describe("pageDeConsultation", () => {
+  it("les états se consultent (formulaires de sélection utilisables) même en lecture seule", () => {
+    expect(pageDeConsultation("/etats")).toBe(true);
+    expect(pageDeConsultation("/etats/analyse")).toBe(true);
+  });
+
+  it("les pages de saisie ne sont jamais des pages de consultation", () => {
+    for (const chemin of ["/mouvements", "/rapprochement", "/parametrage", "/etatsx"]) {
+      expect(pageDeConsultation(chemin)).toBe(false);
+    }
   });
 });
 
