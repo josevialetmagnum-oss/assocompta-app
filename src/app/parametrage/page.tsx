@@ -142,6 +142,21 @@ export default async function ParametragePage() {
       </section>
 
       <section className="space-y-3 rounded border p-5">
+        <h2 className="font-sans text-[17px] font-bold tracking-normal">Exporter mes données</h2>
+        <p className="text-sm text-[var(--texte-discret)]">
+          Gardez une copie des données de l&apos;association (changement d&apos;outil, expert-comptable, archivage). Les mots de passe n&apos;y figurent jamais.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <a href="/parametrage/export/mouvements" download className="rounded border px-3 py-1.5 text-sm font-semibold">
+            Mouvements (CSV, pour Excel)
+          </a>
+          <a href="/parametrage/export/complet" download className="rounded border px-3 py-1.5 text-sm font-semibold">
+            Sauvegarde complète (JSON)
+          </a>
+        </div>
+      </section>
+
+      <section className="space-y-3 rounded border p-5">
         <h2 className="font-sans text-[17px] font-bold tracking-normal">Comptes de consultation</h2>
         <p className="text-sm text-[var(--texte-discret)]">
           Accès en lecture seule aux mouvements et aux états (président, commissaire aux comptes...) — jamais de saisie.

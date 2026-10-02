@@ -5,6 +5,7 @@
 // Polices standard (Helvetica) : elles couvrent le français, le « € » et le tiret long ; tout autre
 // caractère est remplacé par « ? » (voir `sur`) plutôt que de faire échouer l'export.
 
+import { nomFichier } from "@/lib/nom-fichier";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 export type Alignement = "gauche" | "droite";
@@ -247,14 +248,5 @@ export class DocumentPdf {
   }
 }
 
-// Nom de fichier sûr (ASCII, sans espaces) : « Bilan 2026 — Club de judo » → « bilan-2026-club-de-judo.pdf ».
-export function nomFichierPdf(...morceaux: string[]): string {
-  const propre = morceaux
-    .join(" ")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `${propre || "etat"}.pdf`;
-}
+// Nom de fichier PDF sûr (voir nom-fichier.ts).
+export const nomFichierPdf = (...morceaux: string[]): string => nomFichier("pdf", ...morceaux);

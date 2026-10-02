@@ -24,6 +24,9 @@ export function SupprimerAssociation({ id, nom }: { id: number; nom: string }) {
       <span className="font-semibold text-[#A3231B]">
         Supprimer définitivement « {nom} » avec tous ses mouvements, exercices et comptes ? Aucun retour en arrière possible.
       </span>
+      <span className="text-[var(--texte-discret)]">
+        Vous n&apos;avez pas accès à ses données : si elle en veut une copie, son trésorier peut l&apos;exporter (Paramétrage → Exporter mes données) avant la suppression.
+      </span>
       <label className="flex flex-col gap-1">
         <span>Retapez le nom exact pour confirmer :</span>
         <input value={saisie} onChange={(e) => setSaisie(e.target.value)} className="input h-9" autoComplete="off" aria-label="Nom de l'association à supprimer" />
