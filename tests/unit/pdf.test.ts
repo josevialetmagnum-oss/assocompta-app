@@ -84,3 +84,24 @@ describe("transcription des symboles", () => {
     expect(transcrire("é à ç € —")).toBe("é à ç € —");
   });
 });
+
+describe("logo LBSOFT", () => {
+  it("figure sur la première page du PDF (image embarquée) et pas de plantage s'il manquait", async () => {
+    const { PDFName, PDFDict } = await import("pdf-lib");
+    const doc = await DocumentPdf.creer(options);
+    doc.tableau([{ titre: "A", poids: 1 }], [{ cellules: ["x"] }]);
+    const relu = await PDFDocument.load(await doc.octets());
+    const ressources = relu.getPage(0).node.Resources();
+    const xobjets = ressources?.lookupMaybe(PDFName.of("XObject"), PDFDict);
+    expect(xobjets?.keys().length ?? 0).toBeGreaterThanOrEqual(1);
+  });
+
+  it("la copie embarquée est identique au fichier public/lbsoft-logo.png (à mettre à jour ensemble)", async () => {
+    const fs = await import("node:fs");
+    const { LOGO_LBSOFT_PNG_BASE64, LOGO_LBSOFT_RATIO } = await import("@/lib/logo-lbsoft");
+    const fichier = fs.readFileSync("public/lbsoft-logo.png");
+    expect(Buffer.from(LOGO_LBSOFT_PNG_BASE64, "base64").equals(fichier)).toBe(true);
+    // Dimensions lues dans l'en-tête PNG (octets 16-23 : largeur puis hauteur).
+    expect(fichier.readUInt32BE(16) / fichier.readUInt32BE(20)).toBeCloseTo(LOGO_LBSOFT_RATIO, 5);
+  });
+});

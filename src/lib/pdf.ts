@@ -6,7 +6,8 @@
 // caractère est remplacé par « ? » (voir `sur`) plutôt que de faire échouer l'export.
 
 import { nomFichier } from "@/lib/nom-fichier";
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
+import { LOGO_LBSOFT_PNG_BASE64, LOGO_LBSOFT_RATIO } from "@/lib/logo-lbsoft";
 
 export type Alignement = "gauche" | "droite";
 export type Colonne = { titre: string; poids: number; alignement?: Alignement };
@@ -46,6 +47,7 @@ export class DocumentPdf {
     private readonly police: PDFFont,
     private readonly gras: PDFFont,
     private readonly options: OptionsDocument,
+    private readonly logo: PDFImage | null,
   ) {
     this.nouvellePage();
     this.enTete();
@@ -64,7 +66,9 @@ export class DocumentPdf {
     doc.setCreationDate(options.edite);
     const police = await doc.embedFont(StandardFonts.Helvetica);
     const gras = await doc.embedFont(StandardFonts.HelveticaBold);
-    return new DocumentPdf(doc, police, gras, options);
+    // Un logo illisible ne doit jamais empêcher l'export d'un état : on s'en passe.
+    const logo = await doc.embedPng(LOGO_LBSOFT_PNG_BASE64).catch(() => null);
+    return new DocumentPdf(doc, police, gras, options, logo);
   }
 
   // Remplace les espaces insécables (formats de nombres français) et tout caractère que la police
@@ -96,6 +100,12 @@ export class DocumentPdf {
 
   private enTete() {
     const { association, titre, sousTitre } = this.options;
+    // Logo LBSOFT en haut à droite de la première page, aligné sur la ligne de l'association.
+    if (this.logo) {
+      const hauteur = 26;
+      const largeur = hauteur * LOGO_LBSOFT_RATIO;
+      this.page.drawImage(this.logo, { x: LARGEUR - MARGE - largeur, y: HAUTEUR - MARGE - hauteur + 9, width: largeur, height: hauteur });
+    }
     this.ecrire(association, MARGE, 9, this.police, GRIS);
     this.y -= 18;
     this.ecrire(titre, MARGE, 17, this.gras, NOIR);

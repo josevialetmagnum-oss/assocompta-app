@@ -3,6 +3,7 @@ import { associationCourante } from "@/lib/association";
 import { exerciceActif } from "@/lib/tresorerie";
 import { bilanExercice, type BlocBilan } from "@/lib/bilan";
 import { ImprimerButton } from "@/components/ImprimerButton";
+import { EnTeteImpression } from "@/components/EnTeteImpression";
 
 export const dynamic = "force-dynamic";
 
@@ -93,11 +94,7 @@ export default async function BilanPage({ searchParams }: { searchParams: Promis
 
       {bilan && (
         <section className="table-impression-conteneur overflow-x-auto rounded border px-5 py-3">
-          <div className="apercu-impression mb-4">
-            <p className="text-[13px] text-[var(--texte-discret)]">{association.nom}</p>
-            <h1 className="text-2xl font-semibold">Bilan — {bilan.exercice.libelle}</h1>
-            <p className="text-[13px] text-[var(--texte-discret)]">Édité le {jour(new Date())}</p>
-          </div>
+          <EnTeteImpression association={association.nom} titre={`Bilan — ${bilan.exercice.libelle}`} />
 
           <div className="mb-3 mt-2 flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-sans text-[17px] font-bold tracking-normal">

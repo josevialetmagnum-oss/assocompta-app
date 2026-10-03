@@ -4,6 +4,7 @@ import { exerciceActif } from "@/lib/tresorerie";
 import { analyseParLignes } from "@/lib/analyse";
 import { lireParametresAnalyse, type ParametresAnalyseBruts } from "@/lib/analyse-params";
 import { ImprimerButton } from "@/components/ImprimerButton";
+import { EnTeteImpression } from "@/components/EnTeteImpression";
 import { LignesAnalyseForm, type GroupeOptions } from "./LignesAnalyseForm";
 
 export const dynamic = "force-dynamic";
@@ -59,11 +60,7 @@ export default async function AnalysePage({
 
       {resultat && (
         <section className="table-impression-conteneur overflow-x-auto rounded border px-5 py-3">
-          <div className="apercu-impression mb-4">
-            <p className="text-[13px] text-[var(--texte-discret)]">{association.nom}</p>
-            <h1 className="text-2xl font-semibold">Analyse par lignes</h1>
-            <p className="text-[13px] text-[var(--texte-discret)]">Édité le {new Date().toLocaleDateString("fr-FR")}</p>
-          </div>
+          <EnTeteImpression association={association.nom} titre="Analyse par lignes" />
           <div className="mb-2 mt-2 flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-sans text-[17px] font-bold tracking-normal">
               Du {new Date(du).toLocaleDateString("fr-FR")} au {new Date(au).toLocaleDateString("fr-FR")}
