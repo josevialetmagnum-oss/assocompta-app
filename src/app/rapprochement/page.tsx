@@ -52,6 +52,12 @@ export default async function RapprochementPage({
   const detailId = sp.detail ? Number(sp.detail) : null;
   const detail = detailId ? historique.find((h) => h.id === detailId) ?? null : null;
   const mouvementsDetail = detail ? await mouvementsDuRapprochement(associationId, detail.id) : [];
+  const lienPdf = `/rapprochement/pdf?${new URLSearchParams({
+    journal: String(journal.id),
+    date: dateReleveBrut,
+    ...(soldeReleveBrut ? { solde: soldeReleveBrut } : {}),
+    ...(detail ? { detail: String(detail.id) } : {}),
+  }).toString()}`;
   const lienDetail = (id: number | null) => {
     const q = new URLSearchParams({ journal: String(journal.id) });
     if (sp.date) q.set("date", sp.date);
@@ -88,6 +94,7 @@ export default async function RapprochementPage({
             <input type="number" step="0.01" name="solde" defaultValue={soldeReleveBrut} placeholder="0,00" className="input h-11 w-36" />
           </label>
           <button type="submit" className="rounded border px-3 py-1.5 text-sm">Afficher</button>
+          <a href={lienPdf} download className="rounded border px-3 py-1.5 text-sm">Télécharger en PDF</a>
         </form>
       </section>
 

@@ -75,3 +75,12 @@ describe("nomFichierPdf", () => {
     expect(nomFichierPdf("???")).toBe("etat.pdf");
   });
 });
+
+describe("transcription des symboles", () => {
+  it("transcrit les flèches et le vrai signe moins que la police standard ne contient pas", async () => {
+    const { transcrire } = await import("@/lib/pdf");
+    expect(transcrire("Caisse → Banque ← Retour")).toBe("Caisse -> Banque <- Retour");
+    expect(transcrire("recettes − dépenses")).toBe("recettes - dépenses");
+    expect(transcrire("é à ç € —")).toBe("é à ç € —");
+  });
+});

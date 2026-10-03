@@ -31,7 +31,13 @@ const GRIS = rgb(0.36, 0.42, 0.38);
 const VERT_FOND = rgb(0.93, 0.95, 0.92);
 const TRAIT = rgb(0.75, 0.78, 0.74);
 
-export type OptionsDocument = { association: string; titre: string; sousTitre?: string; edite: Date };
+// Symboles courants que la police standard (WinAnsi) ne contient pas : on les transcrit plutôt que
+// d'afficher « ? » (flèches des virements, vrai signe moins).
+export function transcrire(texte: string): string {
+  return texte.replace(/→/g, "->").replace(/←/g, "<-").replace(/−/g, "-");
+}
+
+export type OptionsDocument ={ association: string; titre: string; sousTitre?: string; edite: Date };
 
 export class DocumentPdf {
   readonly modele: ElementModele[] = [];
@@ -65,7 +71,7 @@ export class DocumentPdf {
   // ne sait pas dessiner.
   private sur(texte: string, police: PDFFont = this.police): string {
     let sortie = "";
-    for (const c of texte.replace(/[  ]/g, " ").replace(/[\r\n\t]+/g, " ")) {
+    for (const c of transcrire(texte).replace(/[  ]/g, " ").replace(/[\r\n\t]+/g, " ")) {
       const cle = `${police === this.gras ? "g" : "n"}${c}`;
       let ok = this.cacheCaracteres.get(cle);
       if (ok === undefined) {

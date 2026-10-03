@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { associationCourante } from "@/lib/association";
 import { exerciceActif } from "@/lib/tresorerie";
 import { positionExercice } from "@/lib/date-bilan";
+import { lireFiltreMouvements, listerMouvementsFiltres } from "@/lib/liste-mouvements";
 import { MouvementForm } from "./MouvementForm";
 import { LigneMouvement } from "./LigneMouvement";
 
@@ -33,18 +34,9 @@ export default async function MouvementsPage({
   );
   const exercicesOuverts = exercices.filter((e) => !e.cloture);
 
-  const journalFiltre = sp.journal ? Number(sp.journal) : undefined;
-  const exerciceFiltre = sp.exercice ? Number(sp.exercice) : actif?.id;
-
-  const mouvements = await prisma.mouvement.findMany({
-    where: {
-      associationId,
-      ...(journalFiltre ? { journalId: journalFiltre } : {}),
-      ...(exerciceFiltre ? { exerciceId: exerciceFiltre } : {}),
-    },
-    include: { journal: true, journalDestination: true, ventilations: { include: { sousCategorie: { include: { categorie: true } } } } },
-    orderBy: { date: "desc" },
-  });
+  const { journalId: journalFiltre, exerciceId: exerciceFiltre } = lireFiltreMouvements(sp, actif?.id);
+  const mouvements = await listerMouvementsFiltres(associationId, { journalId: journalFiltre, exerciceId: exerciceFiltre });
+  const lienPdf = `/mouvements/pdf?${new URLSearchParams({ ...(journalFiltre ? { journal: String(journalFiltre) } : {}), exercice: exerciceFiltre ? String(exerciceFiltre) : "" }).toString()}`;
 
   return (
     <main className="mx-auto max-w-[1180px] space-y-6 px-4 py-6 sm:px-8">
@@ -86,7 +78,7 @@ export default async function MouvementsPage({
           </label>
           <label className="flex min-w-0 flex-col gap-1 text-sm">
             <span className="text-neutral-600">Exercice</span>
-            <select name="exercice" defaultValue={sp.exercice ?? String(exerciceFiltre ?? "")} className="input h-11">
+            <select name="exercice" defaultValue={String(exerciceFiltre ?? "")} className="input h-11">
               <option value="">Tous</option>
               {exercices.map((e) => (
                 <option key={e.id} value={e.id}>{e.libelle}</option>
@@ -94,6 +86,7 @@ export default async function MouvementsPage({
             </select>
           </label>
           <button type="submit" className="rounded border px-3 py-1.5 text-sm">Filtrer</button>
+          <a href={lienPdf} download className="rounded border px-3 py-1.5 text-sm">Télécharger en PDF</a>
         </form>
       </section>
 
