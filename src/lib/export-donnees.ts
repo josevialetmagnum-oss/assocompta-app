@@ -17,10 +17,10 @@ export async function exporterAssociation(associationId: number) {
   const association = await prisma.association.findUniqueOrThrow({ where: { id: associationId } });
   const [utilisateurs, exercices, journaux, categories, rapprochements, mouvements] = await Promise.all([
     prisma.utilisateur.findMany({ where: { associationId }, select: { email: true, role: true, actif: true, createdAt: true }, orderBy: { id: "asc" } }),
-    prisma.exercice.findMany({ where: { associationId }, include: { soldesCloture: { include: { journal: true } } }, orderBy: { dateDebut: "asc" } }),
+    prisma.exercice.findMany({ where: { associationId }, include: { soldesCloture: { include: { journal: true }, orderBy: { journal: { nom: "asc" } } } }, orderBy: { dateDebut: "asc" } }),
     prisma.journal.findMany({ where: { associationId }, orderBy: { nom: "asc" } }),
     prisma.categorie.findMany({ where: { associationId }, include: { sousCategories: { orderBy: { nom: "asc" } } }, orderBy: [{ type: "asc" }, { nom: "asc" }] }),
-    prisma.rapprochement.findMany({ where: { associationId }, include: { journal: true, mouvements: { select: { id: true } } }, orderBy: [{ date: "asc" }, { id: "asc" }] }),
+    prisma.rapprochement.findMany({ where: { associationId }, include: { journal: true, mouvements: { select: { id: true }, orderBy: { id: "asc" } } }, orderBy: [{ date: "asc" }, { id: "asc" }] }),
     prisma.mouvement.findMany({
       where: { associationId },
       include: {

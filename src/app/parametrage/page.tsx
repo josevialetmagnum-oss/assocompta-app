@@ -3,6 +3,8 @@ import { associationCourante } from "@/lib/association";
 import { listerComptesAssociation } from "@/lib/comptes";
 import { autoriseSoldesOuverture } from "@/lib/tresorerie";
 import { bilanExercice } from "@/lib/bilan";
+import { associationEstVide } from "@/lib/import-sauvegarde";
+import { ImporterSauvegarde } from "./ImporterSauvegarde";
 import { JournalForm } from "./JournalForm";
 import { BasculeActifJournal } from "./BasculeActifJournal";
 import { CategorieForm } from "./CategorieForm";
@@ -20,12 +22,13 @@ export default async function ParametragePage() {
   // jamais l'envelopper dans un .catch() : cela intercepterait le redirect() de Next.js.
   const associationId = await associationCourante();
 
-  const [journaux, categories, exercices, comptesLectureSeule, soldesOuvertureAutorises] = await Promise.all([
+  const [journaux, categories, exercices, comptesLectureSeule, soldesOuvertureAutorises, vide] = await Promise.all([
     prisma.journal.findMany({ where: { associationId }, orderBy: { nom: "asc" } }),
     prisma.categorie.findMany({ where: { associationId }, include: { sousCategories: true }, orderBy: [{ type: "asc" }, { nom: "asc" }] }),
     prisma.exercice.findMany({ where: { associationId }, orderBy: { dateDebut: "desc" } }),
     listerComptesAssociation(associationId),
     autoriseSoldesOuverture(associationId),
+    associationEstVide(associationId),
   ]);
 
   const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR");
@@ -154,6 +157,23 @@ export default async function ParametragePage() {
             Sauvegarde complète (JSON)
           </a>
         </div>
+      </section>
+
+      <section className="space-y-3 rounded border p-5">
+        <h2 className="font-sans text-[17px] font-bold tracking-normal">Importer une sauvegarde</h2>
+        {vide ? (
+          <>
+            <p className="text-sm text-[var(--texte-discret)]">
+              Rechargez ici une sauvegarde complète (fichier JSON de « Exporter mes données »). Le fichier est d&apos;abord vérifié ; rien n&apos;est
+              enregistré tant que vous ne confirmez pas. Les comptes utilisateurs ne sont pas importés.
+            </p>
+            <ImporterSauvegarde />
+          </>
+        ) : (
+          <p className="text-sm text-[var(--texte-discret)]">
+            L&apos;import n&apos;est possible que dans une association vide, pour ne jamais mélanger ni écraser des données existantes.
+          </p>
+        )}
       </section>
 
       <section className="space-y-3 rounded border p-5">
