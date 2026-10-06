@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { creerExercice, type FormState } from "./actions";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 
 type Journal = { id: number; nom: string; soldeInitial: number };
 
@@ -12,20 +13,21 @@ export function ExerciceForm({
   journaux: Journal[];
   soldesOuvertureAutorises: boolean;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(creerExercice, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(creerExercice, { viderApresSucces: true });
   const [soldes, setSoldes] = useState<Record<number, string>>(() =>
     Object.fromEntries(journaux.map((j) => [j.id, j.soldeInitial ? String(j.soldeInitial) : ""])),
   );
 
   return (
     <form
-      action={formAction}
+      ref={formulaire}
       onSubmit={(e) => {
         const donnees = Object.entries(soldes)
           .filter(([, v]) => v !== "")
           .map(([journalId, v]) => ({ journalId: Number(journalId), solde: Number(v) }));
         const champ = e.currentTarget.elements.namedItem("soldesOuverture") as HTMLInputElement | null;
         if (champ) champ.value = JSON.stringify(donnees);
+        onSubmit(e);
       }}
       className="flex flex-col gap-3"
     >

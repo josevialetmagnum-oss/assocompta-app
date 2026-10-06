@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 import { changerMotDePasse, type FormState } from "./actions";
 
 export function ChangerMotDePasseForm() {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(changerMotDePasse, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(changerMotDePasse, { viderMotsDePasse: true });
 
   return (
-    <form action={formAction} className="flex max-w-sm flex-col gap-3">
+    <form ref={formulaire} onSubmit={onSubmit} className="flex max-w-sm flex-col gap-3">
       {state && state.errors.length > 0 && (
         <div className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
           {state.errors.map((e) => (

@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 import { modifierAssociationAction, type FormState } from "./actions";
 
 // Modification d'une association : son nom, et pour chaque compte trésorier l'email et un nouveau
 // mot de passe (laissé vide = inchangé). Le serveur revalide tout.
 export function ModifierAssociation({ id, nom, tresoriers }: { id: number; nom: string; tresoriers: { id: number; email: string }[] }) {
   const [ouvert, setOuvert] = useState(false);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(modifierAssociationAction, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(modifierAssociationAction);
   const etaitEnCours = useRef(false);
 
   // Referme le panneau quand l'enregistrement vient de réussir.
@@ -29,7 +30,7 @@ export function ModifierAssociation({ id, nom, tresoriers }: { id: number; nom: 
   }
 
   return (
-    <form action={formAction} className="flex w-full max-w-xs flex-col gap-2 rounded border bg-[#F7F9F5] p-3 text-xs">
+    <form ref={formulaire} onSubmit={onSubmit} className="flex w-full max-w-xs flex-col gap-2 rounded border bg-[#F7F9F5] p-3 text-xs">
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="tresoriers" value={tresoriers.map((t) => t.id).join(",")} />
       {state?.errors && (

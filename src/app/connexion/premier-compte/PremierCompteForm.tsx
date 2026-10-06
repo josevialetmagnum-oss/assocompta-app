@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 import { creerPremierCompte, type FormState } from "./actions";
 
 export function PremierCompteForm() {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(creerPremierCompte, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(creerPremierCompte, { viderMotsDePasse: true });
 
   return (
-    <form action={formAction} className="flex w-full flex-col gap-4">
+    <form ref={formulaire} onSubmit={onSubmit} className="flex w-full flex-col gap-4">
       {state?.errors && (
         <div className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
           {state.errors.map((e) => (

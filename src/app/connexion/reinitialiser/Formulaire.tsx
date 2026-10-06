@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 import { reinitialiser, type FormState } from "./actions";
 
 export function FormulaireReinitialisation({ jeton }: { jeton: string }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(reinitialiser, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(reinitialiser, { viderMotsDePasse: true });
 
   if (state?.termine) {
     return (
@@ -21,7 +21,7 @@ export function FormulaireReinitialisation({ jeton }: { jeton: string }) {
   }
 
   return (
-    <form action={formAction} className="flex w-full flex-col gap-4">
+    <form ref={formulaire} onSubmit={onSubmit} className="flex w-full flex-col gap-4">
       <input type="hidden" name="jeton" value={jeton} />
 
       {state?.errors && state.errors.length > 0 && (

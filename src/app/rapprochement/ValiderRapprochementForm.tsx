@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 import { validerRapprochementAction, type FormState } from "./actions";
 
 export function ValiderRapprochementForm({
@@ -14,10 +14,10 @@ export function ValiderRapprochementForm({
   solde: number;
   ecartNul: boolean;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(validerRapprochementAction, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(validerRapprochementAction);
 
   return (
-    <form action={formAction} className="flex items-center gap-3">
+    <form ref={formulaire} onSubmit={onSubmit} className="flex items-center gap-3">
       <input type="hidden" name="journalId" value={journalId} />
       <input type="hidden" name="date" value={date} />
       <input type="hidden" name="solde" value={solde} />

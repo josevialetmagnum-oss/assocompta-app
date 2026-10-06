@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 import { creerMouvement, modifierMouvement, type FormState } from "./actions";
 
 type Journal = { id: number; nom: string };
@@ -44,7 +45,7 @@ export function MouvementForm({
   onSucces?: () => void;
 }) {
   const action = mouvement ? modifierMouvement : creerMouvement;
-  const [state, formAction, pending] = useActionState<FormState, FormData>(action, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(action, { viderApresSucces: !mouvement });
   const [type, setType] = useState<"recette" | "depense" | "virement_interne">(mouvement?.type ?? "depense");
   const [ventilations, setVentilations] = useState<{ sousCategorieId: string; montant: string }[]>(
     mouvement && mouvement.ventilations.length > 0
@@ -67,6 +68,7 @@ export function MouvementForm({
         onSucces?.();
       } else {
         setVentilations([{ sousCategorieId: "", montant: "" }]);
+        setType("depense"); // le formulaire est remis à zéro : la liste « Type » aussi (sinon elle afficherait autre chose que l'état)
       }
     }
     etaitEnCours.current = pending;
@@ -74,7 +76,7 @@ export function MouvementForm({
 
   return (
     <form
-      action={formAction}
+      ref={formulaire}
       onSubmit={(e) => {
         if (type !== "virement_interne") {
           const donnees = ventilations
@@ -83,6 +85,7 @@ export function MouvementForm({
           const champ = (e.currentTarget.elements.namedItem("ventilations") as HTMLInputElement | null);
           if (champ) champ.value = JSON.stringify(donnees);
         }
+        onSubmit(e);
       }}
       className="flex flex-col gap-3"
     >

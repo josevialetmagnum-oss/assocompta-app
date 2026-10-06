@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 import { connecter, type FormState } from "./actions";
 
 export function LoginForm({ suite }: { suite: string }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(connecter, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(connecter, { viderMotsDePasse: true });
 
   return (
-    <form action={formAction} className="flex w-full flex-col gap-4">
+    <form ref={formulaire} onSubmit={onSubmit} className="flex w-full flex-col gap-4">
       <input type="hidden" name="suite" value={suite} />
 
       {state?.errors && (

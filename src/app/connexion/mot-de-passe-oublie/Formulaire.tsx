@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionSansReinit } from "@/components/useActionSansReinit";
 import { demanderLien, type FormState } from "./actions";
 
 export function FormulaireMotDePasseOublie() {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(demanderLien, undefined);
+  const { etat: state, enCours: pending, onSubmit, formulaire } = useActionSansReinit<FormState>(demanderLien);
 
   if (state?.envoye) {
     return (
@@ -16,7 +16,7 @@ export function FormulaireMotDePasseOublie() {
   }
 
   return (
-    <form action={formAction} className="flex w-full flex-col gap-4">
+    <form ref={formulaire} onSubmit={onSubmit} className="flex w-full flex-col gap-4">
       <label className="flex flex-col gap-1 text-[15px]">
         <span className="text-neutral-600">Email du compte</span>
         <input name="email" type="email" autoComplete="username" required autoFocus className="input h-11" />
