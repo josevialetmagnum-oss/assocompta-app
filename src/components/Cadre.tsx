@@ -8,7 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { deconnecter } from "@/app/compte/actions";
-import { ENTREE_COMPTE, entreeActive, entreesDuMenu, lectureSeuleSurCettePage, LIBELLE_ROLE, pageDeConsultation, pageSansCadre, type GroupeMenu } from "@/lib/navigation";
+import { ENTREE_COMPTE, ENTREE_MANUEL, entreeActive, entreesDuMenu, lectureSeuleSurCettePage, LIBELLE_ROLE, pageDeConsultation, pageSansCadre, type GroupeMenu } from "@/lib/navigation";
 
 export type DonneesCadre = {
   menu: GroupeMenu[];
@@ -34,7 +34,7 @@ function initiales(email: string): string {
 }
 
 function Menu({ donnees, chemin, surNavigation }: { donnees: DonneesCadre; chemin: string; surNavigation?: () => void }) {
-  const active = entreeActive(chemin, [...entreesDuMenu(donnees.menu), ENTREE_COMPTE]);
+  const active = entreeActive(chemin, [...entreesDuMenu(donnees.menu), ENTREE_MANUEL, ENTREE_COMPTE]);
   const lien = (href: string, libelle: string, icone: string) => {
     const estActive = active === href;
     return (
@@ -75,6 +75,7 @@ function Menu({ donnees, chemin, surNavigation }: { donnees: DonneesCadre; chemi
       </nav>
 
       <div className="mt-auto flex flex-col gap-0.5 border-t border-white/20 pt-3">
+        {lien(ENTREE_MANUEL.href, ENTREE_MANUEL.libelle, ENTREE_MANUEL.icone)}
         {lien(ENTREE_COMPTE.href, ENTREE_COMPTE.libelle, ENTREE_COMPTE.icone)}
         <form action={deconnecter}>
           <button

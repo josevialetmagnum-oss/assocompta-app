@@ -22,7 +22,9 @@ export async function middleware(request: NextRequest) {
       const pageAutoriseeSuperviseur =
         request.nextUrl.pathname === "/" ||
         request.nextUrl.pathname.startsWith("/administration") ||
-        request.nextUrl.pathname.startsWith("/compte");
+        request.nextUrl.pathname.startsWith("/compte") ||
+        // Le manuel d'utilisation est un contenu statique, sans donnée d'association.
+        request.nextUrl.pathname.startsWith("/manuel");
       if (payload.role === "superviseur" && !pageAutoriseeSuperviseur) {
         return NextResponse.redirect(new URL("/administration", request.url));
       }
