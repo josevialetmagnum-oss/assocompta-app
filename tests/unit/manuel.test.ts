@@ -25,6 +25,18 @@ describe("ancres et sommaire", () => {
   });
 });
 
+describe("titres de niveau 4", () => {
+  it("reçoivent une ancre mais restent hors du sommaire", () => {
+    const blocs: Bloc[] = [
+      { type: "titre", niveau: 2, texte: "Importer" },
+      { type: "titre", niveau: 3, texte: "Importer une sauvegarde" },
+      { type: "titre", niveau: 4, texte: "Les règles" },
+    ];
+    expect([...ancresDesTitres(blocs).values()]).toEqual(["importer", "importer-une-sauvegarde", "les-regles"]);
+    expect(sommaire(blocs)).toEqual([{ titre: "Importer", ancre: "importer", sousTitres: [{ titre: "Importer une sauvegarde", ancre: "importer-une-sauvegarde" }] }]);
+  });
+});
+
 describe("contenu du manuel embarqué", () => {
   it("a un titre, des sections et des ancres toutes uniques et non vides", () => {
     expect(MANUEL[0]).toMatchObject({ type: "titre", niveau: 1 });

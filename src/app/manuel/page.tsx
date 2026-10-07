@@ -41,6 +41,7 @@ function BlocManuel({ bloc, ancres }: { bloc: Bloc; ancres: Map<BlocTitre, strin
         </h2>
       );
     }
+    if (bloc.niveau === 4) return <h4 id={id} className="scroll-mt-6 pt-1 font-sans text-[15px] font-bold tracking-normal">{bloc.texte}</h4>;
     return <h3 id={id} className="scroll-mt-6 pt-2 font-sans text-[17px] font-bold tracking-normal">{bloc.texte}</h3>;
   }
   if (bloc.type === "paragraphe") return <p className="text-[15px] leading-relaxed"><Texte morceaux={bloc.texte} /></p>;

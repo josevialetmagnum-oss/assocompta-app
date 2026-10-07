@@ -7,7 +7,7 @@ import donnees from "@/content/manuel.json";
 export type Morceau = { t: string; b?: boolean; c?: boolean };
 export type ElementListe = { texte: Morceau[]; sous: BlocListe[] };
 export type BlocListe = { type: "liste"; ordonnee: boolean; elements: ElementListe[] };
-export type BlocTitre = { type: "titre"; niveau: 1 | 2 | 3; texte: string };
+export type BlocTitre = { type: "titre"; niveau: 1 | 2 | 3 | 4; texte: string };
 export type BlocParagraphe = { type: "paragraphe"; texte: Morceau[] };
 export type BlocTableau = { type: "tableau"; entete: Morceau[][]; lignes: Morceau[][][] };
 export type Bloc = BlocTitre | BlocParagraphe | BlocListe | BlocTableau;
@@ -24,7 +24,7 @@ export function ancre(texte: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-// Une ancre par titre (niveau 2 et 3), unique dans la page : un titre répété reçoit -2, -3…
+// Une ancre par titre (niveau 2 à 4), unique dans la page : un titre répété reçoit -2, -3…
 export function ancresDesTitres(blocs: Bloc[]): Map<BlocTitre, string> {
   const vues = new Map<string, number>();
   const resultat = new Map<BlocTitre, string>();
@@ -40,7 +40,7 @@ export function ancresDesTitres(blocs: Bloc[]): Map<BlocTitre, string> {
 
 export type EntreeSommaire = { titre: string; ancre: string; sousTitres: { titre: string; ancre: string }[] };
 
-// Sommaire : les titres de niveau 2, chacun avec ses titres de niveau 3.
+// Sommaire : les titres de niveau 2, chacun avec ses titres de niveau 3 (le niveau 4 reste dans le texte).
 export function sommaire(blocs: Bloc[]): EntreeSommaire[] {
   const ancres = ancresDesTitres(blocs);
   const entrees: EntreeSommaire[] = [];
@@ -48,7 +48,7 @@ export function sommaire(blocs: Bloc[]): EntreeSommaire[] {
     if (b.type !== "titre" || b.niveau === 1) continue;
     const a = ancres.get(b)!;
     if (b.niveau === 2) entrees.push({ titre: b.texte, ancre: a, sousTitres: [] });
-    else entrees[entrees.length - 1]?.sousTitres.push({ titre: b.texte, ancre: a });
+    else if (b.niveau === 3) entrees[entrees.length - 1]?.sousTitres.push({ titre: b.texte, ancre: a });
   }
   return entrees;
 }
