@@ -7,6 +7,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { NOM_COOKIE_SESSION } from "@/lib/session-cookie";
+import { urlPublique } from "@/lib/url-publique";
 
 export async function middleware(request: NextRequest) {
   const secret = process.env.SESSION_SECRET;
@@ -26,10 +27,10 @@ export async function middleware(request: NextRequest) {
         // Le manuel d'utilisation est un contenu statique, sans donnée d'association.
         request.nextUrl.pathname.startsWith("/manuel");
       if (payload.role === "superviseur" && !pageAutoriseeSuperviseur) {
-        return NextResponse.redirect(new URL("/administration", request.url));
+        return NextResponse.redirect(urlPublique("/administration", request.url));
       }
       if (request.nextUrl.pathname.startsWith("/administration") && payload.role !== "superviseur") {
-        return NextResponse.redirect(new URL("/", request.url));
+        return NextResponse.redirect(urlPublique("/", request.url));
       }
       return NextResponse.next();
     } catch {
@@ -37,7 +38,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const url = new URL("/connexion", request.url);
+  const url = urlPublique("/connexion", request.url);
   if (request.nextUrl.pathname !== "/") url.searchParams.set("suite", request.nextUrl.pathname);
   return NextResponse.redirect(url);
 }

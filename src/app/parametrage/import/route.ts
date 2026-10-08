@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { associationCourante, exigerEcriture } from "@/lib/association";
 import { importerSauvegarde, TAILLE_MAX_SAUVEGARDE } from "@/lib/import-sauvegarde";
+import { origineAutorisee } from "@/lib/url-publique";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -13,7 +14,7 @@ const reponse = (corps: object, status = 200) =>
 export async function POST(request: Request) {
   // Défense en plus du cookie SameSite : une requête venue d'un autre site est refusée.
   const origine = request.headers.get("origin");
-  if (origine && new URL(origine).host !== new URL(request.url).host) {
+  if (origine && !origineAutorisee(origine, request.url)) {
     return reponse({ ok: false, erreurs: ["Requête refusée (origine inattendue)."] }, 403);
   }
 
